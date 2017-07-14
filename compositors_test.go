@@ -1,4 +1,4 @@
-package audio_test
+package beep_test
 
 import (
 	"math"

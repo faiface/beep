@@ -5,14 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/faiface/pixel/audio"
+	"github.com/faiface/beep"
 	"github.com/hajimehoshi/oto"
 	"github.com/pkg/errors"
 )
 
 var (
 	mu      sync.Mutex
-	mixer   audio.Mixer
+	mixer   beep.Mixer
 	samples [][2]float64
 	buf     []byte
 	player  *oto.Player
@@ -34,16 +34,16 @@ func Init(bufferSize time.Duration) error {
 		player.Close()
 	}
 
-	mixer = audio.Mixer{}
+	mixer = beep.Mixer{}
 
-	numSamples := int(math.Ceil(bufferSize.Seconds() * audio.SampleRate))
+	numSamples := int(math.Ceil(bufferSize.Seconds() * beep.SampleRate))
 	numBytes := numSamples * 4
 
 	samples = make([][2]float64, numSamples)
 	buf = make([]byte, numBytes)
 
 	var err error
-	player, err = oto.NewPlayer(int(audio.SampleRate), 2, 2, numBytes)
+	player, err = oto.NewPlayer(int(beep.SampleRate), 2, 2, numBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize speaker")
 	}
@@ -76,7 +76,7 @@ func Unlock() {
 }
 
 // Play starts playing all provided Streamers through the speaker.
-func Play(s ...audio.Streamer) {
+func Play(s ...beep.Streamer) {
 	mu.Lock()
 	mixer.Play(s...)
 	mu.Unlock()

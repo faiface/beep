@@ -1,4 +1,4 @@
-package audio
+package beep
 
 // Mixer allows for dynamic mixing of arbitrary number of Streamers. Mixer automatically removes
 // drained Streamers. Mixer's stream never drains, when empty, Mixer streams silence.
