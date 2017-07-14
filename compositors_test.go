@@ -62,37 +62,48 @@ func TestTake(t *testing.T) {
 
 func TestSeq(t *testing.T) {
 	var (
-		s    = make([]beep.Streamer, 7)
-		want [][2]float64
+		n    = 7
+		s    = make([]beep.Streamer, n)
+		data = make([][][2]float64, n)
 	)
 	for i := range s {
-		var data [][2]float64
-		s[i], data = randomDataStreamer(time.Nanosecond * time.Duration(1e8+rand.Intn(1e9)))
-		want = append(want, data...)
+		s[i], data[i] = randomDataStreamer(time.Nanosecond * time.Duration(1e8+rand.Intn(1e9)))
+	}
+
+	var want [][2]float64
+	for _, d := range data {
+		want = append(want, d...)
 	}
 
 	got := collect(beep.Seq(s...))
 
 	if !reflect.DeepEqual(want, got) {
-		t.Error("Seq not working correctly")
+		t.Errorf("Seq not working properly")
 	}
 }
 
 func TestMix(t *testing.T) {
 	var (
-		s    = make([]beep.Streamer, 7)
-		want [][2]float64
+		n    = 7
+		s    = make([]beep.Streamer, n)
+		data = make([][][2]float64, n)
 	)
 	for i := range s {
-		var data [][2]float64
-		s[i], data = randomDataStreamer(time.Nanosecond * time.Duration(1e8+rand.Intn(1e9)))
-		for j := range data {
-			if j >= len(want) {
-				want = append(want, data[j])
-				continue
-			}
-			want[j][0] += data[j][0]
-			want[j][1] += data[j][1]
+		s[i], data[i] = randomDataStreamer(time.Nanosecond * time.Duration(1e8+rand.Intn(1e9)))
+	}
+
+	maxLen := 0
+	for _, d := range data {
+		if len(d) > maxLen {
+			maxLen = len(d)
+		}
+	}
+
+	want := make([][2]float64, maxLen)
+	for _, d := range data {
+		for i := range d {
+			want[i][0] += d[i][0]
+			want[i][1] += d[i][1]
 		}
 	}
 
