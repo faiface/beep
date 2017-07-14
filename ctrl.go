@@ -6,7 +6,7 @@ import "time"
 //
 // Wrap a Streamer in a Ctrl.
 //
-//   ctrl := &audio.Ctrl{Streamer: s}
+//   ctrl := &beep.Ctrl{Streamer: s}
 //
 // Then, we can pause the streaming (this will cause Ctrl to stream silence).
 //

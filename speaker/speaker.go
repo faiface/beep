@@ -20,7 +20,7 @@ var (
 )
 
 // Init initializes audio playback through speaker. Must be called before using this package. The
-// value of audio.SampleRate must be set (or left to the default) before calling this function.
+// value of beep.SampleRate must be set (or left to the default) before calling this function.
 //
 // The bufferSize argument specifies the length of the speaker's buffer. Bigger bufferSize means
 // lower CPU usage and more reliable playback. Lower bufferSize means better responsiveness and less
