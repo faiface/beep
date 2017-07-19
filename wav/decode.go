@@ -23,7 +23,7 @@ type ReadSeekCloser interface {
 //
 // Do not close the supplied ReadSeekCloser, instead, use the Close method of the returned
 // StreamSeekCloser when you want to release the resources.
-func Decode(rsc ReadSeekCloser) (s beep.StreamSeekCloser, err error) {
+func Decode(rsc ReadSeekCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
 	d := decoder{rsc: rsc}
 	defer func() { // hacky way to always close rsc if an error occured
 		if err != nil {
@@ -32,30 +32,35 @@ func Decode(rsc ReadSeekCloser) (s beep.StreamSeekCloser, err error) {
 	}()
 	herr := binary.Read(rsc, binary.LittleEndian, &d.h)
 	if herr != nil {
-		return nil, errors.Wrap(herr, "wav")
+		return nil, beep.Format{}, errors.Wrap(herr, "wav")
 	}
 	if string(d.h.RiffMark[:]) != "RIFF" {
-		return nil, errors.New("wav: missing RIFF at the beginning")
+		return nil, beep.Format{}, errors.New("wav: missing RIFF at the beginning")
 	}
 	if string(d.h.WaveMark[:]) != "WAVE" {
-		return nil, errors.New("wav: unsupported file type")
+		return nil, beep.Format{}, errors.New("wav: unsupported file type")
 	}
 	if string(d.h.FmtMark[:]) != "fmt " {
-		return nil, errors.New("wav: missing format chunk marker")
+		return nil, beep.Format{}, errors.New("wav: missing format chunk marker")
 	}
 	if string(d.h.DataMark[:]) != "data" {
-		return nil, errors.New("wav: missing data chunk marker")
+		return nil, beep.Format{}, errors.New("wav: missing data chunk marker")
 	}
 	if d.h.FormatType != 1 {
-		return nil, errors.New("wav: unsupported format type")
+		return nil, beep.Format{}, errors.New("wav: unsupported format type")
 	}
 	if d.h.NumChans <= 0 {
-		return nil, errors.New("wav: invalid number of channels (less than 1)")
+		return nil, beep.Format{}, errors.New("wav: invalid number of channels (less than 1)")
 	}
 	if d.h.BitsPerSample != 8 && d.h.BitsPerSample != 16 {
-		return nil, errors.New("wav: unsupported number of bits per sample, 8 or 16 are supported")
+		return nil, beep.Format{}, errors.New("wav: unsupported number of bits per sample, 8 or 16 are supported")
 	}
-	return &d, nil
+	format = beep.Format{
+		SampleRate:  int(d.h.SampleRate),
+		NumChannels: int(d.h.NumChans),
+		Precision:   int(d.h.BitsPerSample / 8),
+	}
+	return &d, format, nil
 }
 
 type header struct {
