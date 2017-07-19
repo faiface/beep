@@ -6,7 +6,7 @@ import "time"
 //
 // This value should be set at most once before using audio package. It is safe to assume that this
 // value does not change during runtime.
-var SampleRate float64 = 48000
+var SampleRate = 48000
 
 // Streamer is able to stream a finite or infinite sequence of audio samples.
 type Streamer interface {

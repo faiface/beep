@@ -12,7 +12,7 @@ func Take(d time.Duration, s Streamer) Streamer {
 	return &take{
 		s:          s,
 		currSample: 0,
-		numSamples: int(math.Ceil(d.Seconds() * SampleRate)),
+		numSamples: int(math.Ceil(d.Seconds() * float64(SampleRate))),
 	}
 }
 
