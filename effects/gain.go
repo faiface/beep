@@ -1,4 +1,6 @@
-package beep
+package effects
+
+import "github.com/faiface/beep"
 
 // Gain amplifies the wrapped Streamer. The output of the wrapped Streamer gets multiplied by
 // 1+Gain.
@@ -6,7 +8,7 @@ package beep
 // Note that gain is not equivalent to the human perception of volume. Human perception of volume is
 // roughly exponential, while gain only amplifies linearly.
 type Gain struct {
-	Streamer Streamer
+	Streamer beep.Streamer
 	Gain     float64
 }
 
