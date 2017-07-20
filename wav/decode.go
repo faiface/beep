@@ -1,4 +1,3 @@
-// Package wav implements audio data decoding in WAVE format through an beep.StreamSeekCloser.
 package wav
 
 import (
