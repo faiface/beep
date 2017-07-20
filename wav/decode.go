@@ -30,9 +30,8 @@ func Decode(rsc ReadSeekCloser) (s beep.StreamSeekCloser, format beep.Format, er
 			d.rsc.Close()
 		}
 	}()
-	herr := binary.Read(rsc, binary.LittleEndian, &d.h)
-	if herr != nil {
-		return nil, beep.Format{}, errors.Wrap(herr, "wav")
+	if err := binary.Read(rsc, binary.LittleEndian, &d.h); err != nil {
+		return nil, beep.Format{}, errors.Wrap(err, "wav")
 	}
 	if string(d.h.RiffMark[:]) != "RIFF" {
 		return nil, beep.Format{}, errors.New("wav: missing RIFF at the beginning")
