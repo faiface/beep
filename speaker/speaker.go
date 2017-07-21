@@ -36,7 +36,7 @@ func Init(bufferSize time.Duration) error {
 
 	mixer = beep.Mixer{}
 
-	numSamples := int(math.Ceil(bufferSize.Seconds() * beep.SampleRate))
+	numSamples := int(math.Ceil(bufferSize.Seconds() * float64(beep.SampleRate)))
 	numBytes := numSamples * 4
 
 	samples = make([][2]float64, numSamples)
