@@ -3,6 +3,7 @@ package wav
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/faiface/beep"
@@ -47,49 +48,33 @@ func Encode(w io.WriteSeeker, s beep.Streamer, format beep.Format) (err error) {
 
 	var (
 		bw      = bufio.NewWriter(w)
-		samples [512][2]float64
+		samples = make([][2]float64, 512)
+		buffer  = make([]byte, len(samples)*format.Width())
 		written int
 	)
 	for {
-		n, ok := s.Stream(samples[:])
+		n, ok := s.Stream(samples)
 		if !ok {
 			break
 		}
+		buf := buffer
 		switch {
-		case format.Precision == 1 && format.NumChannels == 1:
+		case format.Precision == 1:
 			for _, sample := range samples[:n] {
-				if err := encodeMono8(bw, sample); err != nil {
-					return err
-				}
+				buf = buf[format.EncodeUnsigned(buf, sample):]
 			}
-		case format.Precision == 1 && format.NumChannels >= 2:
-			padding := make([]byte, (format.NumChannels-2)*format.Precision)
+		case format.Precision == 2:
 			for _, sample := range samples[:n] {
-				if err := encodeStereo8(bw, sample); err != nil {
-					return err
-				}
-				if _, err := bw.Write(padding); err != nil {
-					return err
-				}
+				buf = buf[format.EncodeSigned(buf, sample):]
 			}
-		case format.Precision == 2 && format.NumChannels == 1:
-			for _, sample := range samples[:n] {
-				if err := encodeMono16(bw, sample); err != nil {
-					return err
-				}
-			}
-		case format.Precision == 2 && format.NumChannels >= 2:
-			padding := make([]byte, (format.NumChannels-2)*format.Precision)
-			for _, sample := range samples[:n] {
-				if err := encodeStereo16(bw, sample); err != nil {
-					return err
-				}
-				if _, err := bw.Write(padding); err != nil {
-					return err
-				}
-			}
+		default:
+			panic(fmt.Errorf("wav: encode: invalid precision: %d", format.Precision))
 		}
-		written += n * format.NumChannels * format.Precision
+		nn, err := bw.Write(buffer[:n*format.Width()])
+		if err != nil {
+			return err
+		}
+		written += nn
 	}
 	if err := bw.Flush(); err != nil {
 		return err
@@ -108,71 +93,5 @@ func Encode(w io.WriteSeeker, s beep.Streamer, format beep.Format) (err error) {
 		return err
 	}
 
-	return nil
-}
-
-func encodeMono8(w io.Writer, sample [2]float64) error {
-	val := (sample[0] + sample[1]) / 2
-	if val < -1 {
-		val = -1
-	}
-	if val > +1 {
-		val = +1
-	}
-	valUint8 := uint8((val + 1) / 2 * (1<<8 - 1))
-	p := [1]byte{valUint8}
-	_, err := w.Write(p[:])
-	return err
-}
-
-func encodeMono16(w io.Writer, sample [2]float64) error {
-	val := (sample[0] + sample[1]) / 2
-	if val < -1 {
-		val = -1
-	}
-	if val > +1 {
-		val = +1
-	}
-	valInt16 := int16(val * (1<<15 - 1))
-	low := byte(valInt16)
-	high := byte(valInt16 >> 8)
-	p := [2]byte{low, high}
-	_, err := w.Write(p[:])
-	return err
-}
-
-func encodeStereo8(w io.Writer, sample [2]float64) error {
-	for _, val := range sample {
-		if val < -1 {
-			val = -1
-		}
-		if val > +1 {
-			val = +1
-		}
-		valUint8 := uint8((val + 1) / 2 * (1<<8 - 1))
-		p := [1]byte{valUint8}
-		if _, err := w.Write(p[:]); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func encodeStereo16(w io.Writer, sample [2]float64) error {
-	for _, val := range sample {
-		if val < -1 {
-			val = -1
-		}
-		if val > +1 {
-			val = +1
-		}
-		valInt16 := int16(val * (1<<15 - 1))
-		low := byte(valInt16)
-		high := byte(valInt16 >> 8)
-		p := [2]byte{low, high}
-		if _, err := w.Write(p[:]); err != nil {
-			return err
-		}
-	}
 	return nil
 }
