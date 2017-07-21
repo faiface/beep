@@ -1,6 +1,9 @@
 package beep
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Format is the format of a Buffer or another audio source.
 type Format struct {
@@ -20,6 +23,16 @@ type Format struct {
 // This is equal to f.NumChannels * f.Precision.
 func (f Format) Width() int {
 	return f.NumChannels * f.Precision
+}
+
+// Duration returns the duration of n samples in this format.
+func (f Format) Duration(n int) time.Duration {
+	return time.Second * time.Duration(n) / time.Duration(f.SampleRate)
+}
+
+// NumSamples returns the number of samples in this format which last for d duration.
+func (f Format) NumSamples(d time.Duration) int {
+	return int(d * time.Duration(f.SampleRate) / time.Second)
 }
 
 // EncodeSigned encodes a single sample in f.Width() bytes to p in signed format.
@@ -98,7 +111,7 @@ func encodeFloat(signed bool, p []byte, precision int, x float64) (n int) {
 
 func decodeFloat(signed bool, p []byte, precision int) (x float64, n int) {
 	var xUint64 uint64
-	for i := 0; i < precision; i++ {
+	for i := precision - 1; i >= 0; i-- {
 		xUint64 <<= 8
 		xUint64 += uint64(p[i])
 	}
@@ -109,6 +122,10 @@ func decodeFloat(signed bool, p []byte, precision int) (x float64, n int) {
 }
 
 func floatToSigned(precision int, x float64) uint64 {
+	if x < 0 {
+		compl := uint64(-x * float64(uint64(1)<<uint(precision*8-1)-1))
+		return uint64(1<<uint(precision*8)) - compl
+	}
 	return uint64(x * float64(uint64(1)<<uint(precision*8-1)-1))
 }
 
@@ -117,6 +134,10 @@ func floatToUnsigned(precision int, x float64) uint64 {
 }
 
 func signedToFloat(precision int, xUint64 uint64) float64 {
+	if xUint64 >= 1<<uint(precision*8-1) {
+		compl := 1<<uint(precision*8) - xUint64
+		return -float64(int64(compl)) / float64(uint64(1)<<uint(precision*8-1)-1)
+	}
 	return float64(int64(xUint64)) / float64(uint64(1)<<uint(precision*8-1)-1)
 }
 
@@ -132,4 +153,94 @@ func norm(x float64) float64 {
 		return +1
 	}
 	return x
+}
+
+type Buffer struct {
+	f    Format
+	data []byte
+}
+
+func NewBuffer(f Format) *Buffer {
+	return &Buffer{f: f}
+}
+
+func (b *Buffer) Format() Format {
+	return b.f
+}
+
+func (b *Buffer) Len() int {
+	return len(b.data)
+}
+
+func (b *Buffer) Duration() time.Duration {
+	return b.f.Duration(len(b.data) / b.f.Width())
+}
+
+func (b *Buffer) Append(s Streamer) {
+	var (
+		samples [512][2]float64
+		p       = make([]byte, b.f.Width())
+	)
+	for {
+		n, ok := s.Stream(samples[:])
+		if !ok {
+			break
+		}
+		for _, sample := range samples[:n] {
+			b.f.EncodeSigned(p, sample)
+			b.data = append(b.data, p...)
+		}
+	}
+}
+
+func (b *Buffer) Streamer(from, to time.Duration) StreamSeeker {
+	fromByte := b.f.NumSamples(from) * b.f.Width()
+	toByte := b.f.NumSamples(to) * b.f.Width()
+	return &bufferStreamer{
+		f:    b.f,
+		data: b.data[fromByte:toByte],
+		pos:  0,
+	}
+}
+
+type bufferStreamer struct {
+	f    Format
+	data []byte
+	pos  int
+}
+
+func (bs *bufferStreamer) Stream(samples [][2]float64) (n int, ok bool) {
+	if bs.pos >= len(bs.data) {
+		return 0, false
+	}
+	for i := range samples {
+		if bs.pos >= len(bs.data) {
+			break
+		}
+		sample, advance := bs.f.DecodeSigned(bs.data[bs.pos:])
+		samples[i] = sample
+		bs.pos += advance
+		n++
+	}
+	return n, true
+}
+
+func (bs *bufferStreamer) Err() error {
+	return nil
+}
+
+func (bs *bufferStreamer) Duration() time.Duration {
+	return bs.f.Duration(len(bs.data) / bs.f.Width())
+}
+
+func (bs *bufferStreamer) Position() time.Duration {
+	return bs.f.Duration(bs.pos / bs.f.Width())
+}
+
+func (bs *bufferStreamer) Seek(d time.Duration) error {
+	if d < 0 || bs.Duration() < d {
+		return fmt.Errorf("buffer: seek duration %v out of range [%v, %v]", d, 0, bs.Duration())
+	}
+	bs.pos = bs.f.NumSamples(d) * bs.f.Width()
+	return nil
 }
