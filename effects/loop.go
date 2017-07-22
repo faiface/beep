@@ -3,6 +3,8 @@ package effects
 import "github.com/faiface/beep"
 
 // Loop takes a StreamSeeker and plays it count times. If count is negative, s is looped infinitely.
+//
+// The returned Streamer propagates s's errors.
 func Loop(count int, s beep.StreamSeeker) beep.Streamer {
 	return &loop{
 		s:       s,
