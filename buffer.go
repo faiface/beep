@@ -15,7 +15,8 @@ type Format struct {
 	// The samples should always be interleaved.
 	NumChannels int
 
-	// Precision is the number of bytes used to encode a single sample.
+	// Precision is the number of bytes used to encode a single sample. Only values up to 6 work
+	// well, higher values loose precision due to floating point numbers.
 	Precision int
 }
 
