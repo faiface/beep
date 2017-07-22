@@ -20,7 +20,7 @@ type Format struct {
 	Precision int
 }
 
-// Width returns the number of bytes per one sample (all channels).
+// Width returns the number of bytes per one frame (samples in all channels).
 //
 // This is equal to f.NumChannels * f.Precision.
 func (f Format) Width() int {
