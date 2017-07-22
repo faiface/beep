@@ -6,7 +6,9 @@ import "time"
 type Streamer interface {
 	// Stream copies at most len(samples) next audio samples to the samples slice.
 	//
-	// The sample rate of the samples is specified by the global SampleRate variable/constant.
+	// The sample rate of the samples is unspecified in general, but should be specified for
+	// each concrete Streamer.
+	//
 	// The value at samples[i][0] is the value of the left channel of the i-th sample.
 	// Similarly, samples[i][1] is the value of the right channel of the i-th sample.
 	//
