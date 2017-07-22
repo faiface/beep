@@ -157,24 +157,30 @@ func norm(x float64) float64 {
 	return x
 }
 
+// Buffer is a storage for audio data. You can think of it as a bytes.Buffer for audio samples.
 type Buffer struct {
 	f    Format
 	data []byte
 	tmp  []byte
 }
 
+// NewBuffer creates a new empty Buffer which stores samples in the provided format.
 func NewBuffer(f Format) *Buffer {
 	return &Buffer{f: f, tmp: make([]byte, f.Width())}
 }
 
+// Format returns the format of the Buffer.
 func (b *Buffer) Format() Format {
 	return b.f
 }
 
+// Duration returns the total duration of the audio data which is currently in the Buffer.
 func (b *Buffer) Duration() time.Duration {
 	return b.f.Duration(len(b.data) / b.f.Width())
 }
 
+// Pop removes audio data from the beginning of the Buffer of the total duration of d. If the Buffer
+// contains less data, all data will be removed from the Buffer without error.
 func (b *Buffer) Pop(d time.Duration) {
 	if d > b.Duration() {
 		d = b.Duration()
@@ -183,6 +189,9 @@ func (b *Buffer) Pop(d time.Duration) {
 	b.data = b.data[n:]
 }
 
+// Append adds all audio data from the given Streamer to the end of the Buffer.
+//
+// The Streamer will be drained when this method finishes.
 func (b *Buffer) Append(s Streamer) {
 	var samples [512][2]float64
 	for {
@@ -197,6 +206,9 @@ func (b *Buffer) Append(s Streamer) {
 	}
 }
 
+// Streamer returns a StreamSeeker which streams audio data contained inside the Buffer in the given
+// time interval. If from is less than 0 or to is more than b.Duration() or to is less than from,
+// this method panics.
 func (b *Buffer) Streamer(from, to time.Duration) StreamSeeker {
 	fromByte := b.f.NumSamples(from) * b.f.Width()
 	toByte := b.f.NumSamples(to) * b.f.Width()
