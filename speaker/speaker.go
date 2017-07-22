@@ -19,13 +19,12 @@ var (
 	done    chan struct{}
 )
 
-// Init initializes audio playback through speaker. Must be called before using this package. The
-// value of beep.SampleRate must be set (or left to the default) before calling this function.
+// Init initializes audio playback through speaker. Must be called before using this package.
 //
 // The bufferSize argument specifies the length of the speaker's buffer. Bigger bufferSize means
 // lower CPU usage and more reliable playback. Lower bufferSize means better responsiveness and less
 // delay.
-func Init(bufferSize time.Duration) error {
+func Init(sampleRate int, bufferSize time.Duration) error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -36,14 +35,14 @@ func Init(bufferSize time.Duration) error {
 
 	mixer = beep.Mixer{}
 
-	numSamples := int(math.Ceil(bufferSize.Seconds() * float64(beep.SampleRate)))
+	numSamples := int(math.Ceil(bufferSize.Seconds() * float64(sampleRate)))
 	numBytes := numSamples * 4
 
 	samples = make([][2]float64, numSamples)
 	buf = make([]byte, numBytes)
 
 	var err error
-	player, err = oto.NewPlayer(int(beep.SampleRate), 2, 2, numBytes)
+	player, err = oto.NewPlayer(sampleRate, 2, 2, numBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize speaker")
 	}

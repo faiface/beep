@@ -2,12 +2,6 @@ package beep
 
 import "time"
 
-// SampleRate is the number of audio samples a Streamer should produce per one second of audio.
-//
-// This value should be set at most once before using audio package. It is safe to assume that this
-// value does not change during runtime.
-var SampleRate = 48000
-
 // Streamer is able to stream a finite or infinite sequence of audio samples.
 type Streamer interface {
 	// Stream copies at most len(samples) next audio samples to the samples slice.

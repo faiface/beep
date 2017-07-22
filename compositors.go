@@ -1,18 +1,13 @@
 package beep
 
-import (
-	"math"
-	"time"
-)
-
-// Take returns a Streamer which streams s for at most d duration.
+// Take returns a Streamer which streams at most n samples from s.
 //
 // The returned Streamer propagates s's errors throught Err.
-func Take(d time.Duration, s Streamer) Streamer {
+func Take(n int, s Streamer) Streamer {
 	return &take{
 		s:          s,
 		currSample: 0,
-		numSamples: int(math.Ceil(d.Seconds() * float64(SampleRate))),
+		numSamples: n,
 	}
 }
 
