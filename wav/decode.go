@@ -10,26 +10,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ReadSeekCloser is a union of io.Reader, io.Seeker and io.Closer.
-type ReadSeekCloser interface {
-	io.Reader
-	io.Seeker
-	io.Closer
-}
-
-// Decode takes a ReadSeekCloser containing audio data in WAVE format and returns a
-// StreamSeekCloser, which streams that audio.
+// Decode takes a ReadCloser containing audio data in WAVE format and returns a StreamSeekCloser,
+// which streams that audio. The Seek method will return an error if rc is not io.Seeker.
 //
 // Do not close the supplied ReadSeekCloser, instead, use the Close method of the returned
 // StreamSeekCloser when you want to release the resources.
-func Decode(rsc ReadSeekCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
-	d := decoder{rsc: rsc}
+func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
+	d := decoder{rc: rc}
 	defer func() { // hacky way to always close rsc if an error occured
 		if err != nil {
-			d.rsc.Close()
+			d.rc.Close()
 		}
 	}()
-	if err := binary.Read(rsc, binary.LittleEndian, &d.h); err != nil {
+	if err := binary.Read(rc, binary.LittleEndian, &d.h); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav")
 	}
 	if string(d.h.RiffMark[:]) != "RIFF" {
@@ -78,82 +71,86 @@ type header struct {
 }
 
 type decoder struct {
-	rsc ReadSeekCloser
+	rc  io.ReadCloser
 	h   header
 	pos int32
 	err error
 }
 
-func (s *decoder) Err() error {
-	return s.err
+func (d *decoder) Err() error {
+	return d.err
 }
 
-func (s *decoder) Duration() time.Duration {
-	numBytes := time.Duration(s.h.DataSize)
-	perFrame := time.Duration(s.h.BytesPerFrame)
-	sampRate := time.Duration(s.h.SampleRate)
+func (d *decoder) Duration() time.Duration {
+	numBytes := time.Duration(d.h.DataSize)
+	perFrame := time.Duration(d.h.BytesPerFrame)
+	sampRate := time.Duration(d.h.SampleRate)
 	return numBytes / perFrame * time.Second / sampRate
 }
 
-func (s *decoder) Position() time.Duration {
-	frameIndex := time.Duration(s.pos / int32(s.h.BytesPerFrame))
-	return frameIndex * time.Second / time.Duration(s.h.SampleRate)
+func (d *decoder) Position() time.Duration {
+	frameIndex := time.Duration(d.pos / int32(d.h.BytesPerFrame))
+	return frameIndex * time.Second / time.Duration(d.h.SampleRate)
 }
 
-func (s *decoder) Seek(d time.Duration) error {
-	if d < 0 || s.Duration() < d {
-		return fmt.Errorf("wav: seek duration %v out of range [%v, %v]", d, 0, s.Duration())
+func (d *decoder) Seek(dur time.Duration) error {
+	seeker, ok := d.rc.(io.Seeker)
+	if !ok {
+		return fmt.Errorf("wav: seek: resource is not io.Seeker")
 	}
-	frame := int32(d * time.Duration(s.h.SampleRate) / time.Second)
-	pos := frame * int32(s.h.BytesPerFrame)
-	_, err := s.rsc.Seek(int64(pos)+44, io.SeekStart) // 44 is the size of the header
+	if dur < 0 || d.Duration() < dur {
+		return fmt.Errorf("wav: seek duration %v out of range [%v, %v]", dur, 0, d.Duration())
+	}
+	frame := int32(dur * time.Duration(d.h.SampleRate) / time.Second)
+	pos := frame * int32(d.h.BytesPerFrame)
+	_, err := seeker.Seek(int64(pos)+44, io.SeekStart) // 44 is the size of the header
 	if err != nil {
 		return errors.Wrap(err, "wav: seek error")
 	}
-	s.pos = pos
+	d.pos = pos
 	return nil
 }
 
-func (s *decoder) Stream(samples [][2]float64) (n int, ok bool) {
-	if s.err != nil || s.pos >= s.h.DataSize {
+func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
+	if d.err != nil || d.pos >= d.h.DataSize {
 		return 0, false
 	}
-	bytesPerFrame := int(s.h.BytesPerFrame)
+	bytesPerFrame := int(d.h.BytesPerFrame)
 	p := make([]byte, len(samples)*bytesPerFrame)
-	n, err := s.rsc.Read(p)
+	n, err := d.rc.Read(p)
 	if err != nil {
-		s.err = err
+		d.err = err
 	}
 	switch {
-	case s.h.BitsPerSample == 8 && s.h.NumChans == 1:
+	case d.h.BitsPerSample == 8 && d.h.NumChans == 1:
 		for i, j := 0, 0; i <= n-bytesPerFrame; i, j = i+bytesPerFrame, j+1 {
 			val := float64(p[i])/(1<<8-1)*2 - 1
 			samples[j][0] = val
 			samples[j][1] = val
 		}
-	case s.h.BitsPerSample == 8 && s.h.NumChans >= 2:
+	case d.h.BitsPerSample == 8 && d.h.NumChans >= 2:
 		for i, j := 0, 0; i <= n-bytesPerFrame; i, j = i+bytesPerFrame, j+1 {
 			samples[j][0] = float64(p[i+0])/(1<<8-1)*2 - 1
 			samples[j][1] = float64(p[i+1])/(1<<8-1)*2 - 1
 		}
-	case s.h.BitsPerSample == 16 && s.h.NumChans == 1:
+	case d.h.BitsPerSample == 16 && d.h.NumChans == 1:
 		for i, j := 0, 0; i <= n-bytesPerFrame; i, j = i+bytesPerFrame, j+1 {
 			val := float64(int16(p[i+0])+int16(p[i+1])*(1<<8)) / (1<<15 - 1)
 			samples[j][0] = val
 			samples[j][1] = val
 		}
-	case s.h.BitsPerSample == 16 && s.h.NumChans >= 2:
+	case d.h.BitsPerSample == 16 && d.h.NumChans >= 2:
 		for i, j := 0, 0; i <= n-bytesPerFrame; i, j = i+bytesPerFrame, j+1 {
 			samples[j][0] = float64(int16(p[i+0])+int16(p[i+1])*(1<<8)) / (1<<15 - 1)
 			samples[j][1] = float64(int16(p[i+2])+int16(p[i+3])*(1<<8)) / (1<<15 - 1)
 		}
 	}
-	s.pos += int32(n)
+	d.pos += int32(n)
 	return n / bytesPerFrame, true
 }
 
-func (s *decoder) Close() error {
-	err := s.rsc.Close()
+func (d *decoder) Close() error {
+	err := d.rc.Close()
 	if err != nil {
 		return errors.Wrap(err, "wav")
 	}
