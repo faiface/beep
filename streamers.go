@@ -1,20 +1,21 @@
 package beep
 
-// Silence returns a Streamer which streams n samples of silence. If n is negative, silence is
+// Silence returns a Streamer which streams num samples of silence. If n is negative, silence is
 // streamed forever.
-func Silence(n int) Streamer {
+func Silence(num int) Streamer {
 	return StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
-		if n == 0 {
-			return n, false
+		if num == 0 {
+			return 0, false
 		}
 		for i := range samples {
-			if n == 0 {
+			if num == 0 {
 				break
 			}
 			samples[i] = [2]float64{}
-			if n > 0 {
-				n--
+			if num > 0 {
+				num--
 			}
+			n++
 		}
 		return n, true
 	})
