@@ -2,6 +2,7 @@ package beep
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -59,14 +60,14 @@ func (f Format) encode(signed bool, p []byte, sample [2]float64) (n int) {
 	switch {
 	case f.NumChannels == 1:
 		x := norm((sample[0] + sample[1]) / 2)
-		p = p[encodeFloat(signed, p, f.Precision, x):]
+		p = p[encodeFloat(signed, f.Precision, p, x):]
 	case f.NumChannels >= 2:
 		for c := range sample {
 			x := norm(sample[c])
-			p = p[encodeFloat(signed, p, f.Precision, x):]
+			p = p[encodeFloat(signed, f.Precision, p, x):]
 		}
 		for c := len(sample); c < f.NumChannels; c++ {
-			p = p[encodeFloat(signed, p, f.Precision, 0):]
+			p = p[encodeFloat(signed, f.Precision, p, 0):]
 		}
 	default:
 		panic(fmt.Errorf("format: encode: invalid number of channels: %d", f.NumChannels))
@@ -77,16 +78,16 @@ func (f Format) encode(signed bool, p []byte, sample [2]float64) (n int) {
 func (f Format) decode(signed bool, p []byte) (sample [2]float64, n int) {
 	switch {
 	case f.NumChannels == 1:
-		x, _ := decodeFloat(signed, p, f.Precision)
+		x, _ := decodeFloat(signed, f.Precision, p)
 		return [2]float64{x, x}, f.Width()
 	case f.NumChannels >= 2:
 		for c := range sample {
-			x, n := decodeFloat(signed, p, f.Precision)
+			x, n := decodeFloat(signed, f.Precision, p)
 			sample[c] = x
 			p = p[n:]
 		}
 		for c := len(sample); c < f.NumChannels; c++ {
-			_, n := decodeFloat(signed, p, f.Precision)
+			_, n := decodeFloat(signed, f.Precision, p)
 			p = p[n:]
 		}
 		return sample, f.Width()
@@ -95,7 +96,7 @@ func (f Format) decode(signed bool, p []byte) (sample [2]float64, n int) {
 	}
 }
 
-func encodeFloat(signed bool, p []byte, precision int, x float64) (n int) {
+func encodeFloat(signed bool, precision int, p []byte, x float64) (n int) {
 	var xUint64 uint64
 	if signed {
 		xUint64 = floatToSigned(precision, x)
@@ -109,7 +110,7 @@ func encodeFloat(signed bool, p []byte, precision int, x float64) (n int) {
 	return precision
 }
 
-func decodeFloat(signed bool, p []byte, precision int) (x float64, n int) {
+func decodeFloat(signed bool, precision int, p []byte) (x float64, n int) {
 	var xUint64 uint64
 	for i := precision - 1; i >= 0; i-- {
 		xUint64 <<= 8
@@ -123,26 +124,26 @@ func decodeFloat(signed bool, p []byte, precision int) (x float64, n int) {
 
 func floatToSigned(precision int, x float64) uint64 {
 	if x < 0 {
-		compl := uint64(-x * float64(uint64(1)<<uint(precision*8-1)-1))
+		compl := uint64(-x * (math.Exp2(float64(precision)*8-1) - 1))
 		return uint64(1<<uint(precision*8)) - compl
 	}
-	return uint64(x * float64(uint64(1)<<uint(precision*8-1)-1))
+	return uint64(x * (math.Exp2(float64(precision)*8-1) - 1))
 }
 
 func floatToUnsigned(precision int, x float64) uint64 {
-	return uint64((x + 1) / 2 * float64(uint64(1)<<uint(precision*8)-1))
+	return uint64((x + 1) / 2 * (math.Exp2(float64(precision)*8) - 1))
 }
 
 func signedToFloat(precision int, xUint64 uint64) float64 {
 	if xUint64 >= 1<<uint(precision*8-1) {
 		compl := 1<<uint(precision*8) - xUint64
-		return -float64(int64(compl)) / float64(uint64(1)<<uint(precision*8-1)-1)
+		return -float64(int64(compl)) / (math.Exp2(float64(precision)*8-1) - 1)
 	}
-	return float64(int64(xUint64)) / float64(uint64(1)<<uint(precision*8-1)-1)
+	return float64(int64(xUint64)) / (math.Exp2(float64(precision)*8-1) - 1)
 }
 
 func unsignedToFloat(precision int, xUint64 uint64) float64 {
-	return float64(xUint64)/float64(uint(1)<<uint(precision*8)-1)*2 - 1
+	return float64(xUint64)/(math.Exp2(float64(precision)*8)-1)*2 - 1
 }
 
 func norm(x float64) float64 {
@@ -158,37 +159,39 @@ func norm(x float64) float64 {
 type Buffer struct {
 	f    Format
 	data []byte
+	tmp  []byte
 }
 
 func NewBuffer(f Format) *Buffer {
-	return &Buffer{f: f}
+	return &Buffer{f: f, tmp: make([]byte, f.Width())}
 }
 
 func (b *Buffer) Format() Format {
 	return b.f
 }
 
-func (b *Buffer) Len() int {
-	return len(b.data)
-}
-
 func (b *Buffer) Duration() time.Duration {
 	return b.f.Duration(len(b.data) / b.f.Width())
 }
 
+func (b *Buffer) Pop(d time.Duration) {
+	if d > b.Duration() {
+		d = b.Duration()
+	}
+	n := b.f.NumSamples(d)
+	b.data = b.data[n:]
+}
+
 func (b *Buffer) Append(s Streamer) {
-	var (
-		samples [512][2]float64
-		p       = make([]byte, b.f.Width())
-	)
+	var samples [512][2]float64
 	for {
 		n, ok := s.Stream(samples[:])
 		if !ok {
 			break
 		}
 		for _, sample := range samples[:n] {
-			b.f.EncodeSigned(p, sample)
-			b.data = append(b.data, p...)
+			b.f.EncodeSigned(b.tmp, sample)
+			b.data = append(b.data, b.tmp...)
 		}
 	}
 }
