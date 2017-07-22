@@ -13,7 +13,7 @@ import (
 // randomDataStreamer generates random samples of duration d and returns a Streamer which streams
 // them and the data itself.
 func randomDataStreamer(d time.Duration) (s beep.Streamer, data [][2]float64) {
-	numSamples := int(math.Ceil(d.Seconds() * beep.SampleRate))
+	numSamples := int(math.Ceil(d.Seconds() * float64(beep.SampleRate)))
 	data = make([][2]float64, numSamples)
 	for i := range data {
 		data[i][0] = rand.Float64()*2 - 1
@@ -49,7 +49,7 @@ func TestTake(t *testing.T) {
 		total := time.Nanosecond * time.Duration(1e8+rand.Intn(1e9))
 		s, data := randomDataStreamer(total)
 		d := time.Nanosecond * time.Duration(rand.Int63n(total.Nanoseconds()))
-		numSamples := int(math.Ceil(d.Seconds() * beep.SampleRate))
+		numSamples := int(math.Ceil(d.Seconds() * float64(beep.SampleRate)))
 
 		want := data[:numSamples]
 		got := collect(beep.Take(d, s))
