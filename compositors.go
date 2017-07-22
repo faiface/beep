@@ -1,7 +1,5 @@
 package beep
 
-import "github.com/faiface/beep"
-
 // Take returns a Streamer which streams at most n samples from s.
 //
 // The returned Streamer propagates s's errors throught Err.
@@ -39,7 +37,7 @@ func (t *take) Err() error {
 // Loop takes a StreamSeeker and plays it count times. If count is negative, s is looped infinitely.
 //
 // The returned Streamer propagates s's errors.
-func Loop(count int, s beep.StreamSeeker) beep.Streamer {
+func Loop(count int, s StreamSeeker) Streamer {
 	return &loop{
 		s:       s,
 		remains: count,
@@ -47,7 +45,7 @@ func Loop(count int, s beep.StreamSeeker) beep.Streamer {
 }
 
 type loop struct {
-	s       beep.StreamSeeker
+	s       StreamSeeker
 	remains int
 }
 
