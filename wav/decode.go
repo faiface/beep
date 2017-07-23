@@ -47,7 +47,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 		return nil, beep.Format{}, errors.New("wav: unsupported number of bits per sample, 8 or 16 are supported")
 	}
 	format = beep.Format{
-		SampleRate:  int(d.h.SampleRate),
+		SampleRate:  beep.SampleRate(d.h.SampleRate),
 		NumChannels: int(d.h.NumChans),
 		Precision:   int(d.h.BitsPerSample / 8),
 	}
@@ -81,28 +81,25 @@ func (d *decoder) Err() error {
 	return d.err
 }
 
-func (d *decoder) Duration() time.Duration {
+func (d *decoder) Len() int {
 	numBytes := time.Duration(d.h.DataSize)
 	perFrame := time.Duration(d.h.BytesPerFrame)
-	sampRate := time.Duration(d.h.SampleRate)
-	return numBytes / perFrame * time.Second / sampRate
+	return int(numBytes / perFrame)
 }
 
-func (d *decoder) Position() time.Duration {
-	frameIndex := time.Duration(d.pos / int32(d.h.BytesPerFrame))
-	return frameIndex * time.Second / time.Duration(d.h.SampleRate)
+func (d *decoder) Position() int {
+	return int(d.pos / int32(d.h.BytesPerFrame))
 }
 
-func (d *decoder) Seek(dur time.Duration) error {
+func (d *decoder) Seek(p int) error {
 	seeker, ok := d.rc.(io.Seeker)
 	if !ok {
 		return fmt.Errorf("wav: seek: resource is not io.Seeker")
 	}
-	if dur < 0 || d.Duration() < dur {
-		return fmt.Errorf("wav: seek duration %v out of range [%v, %v]", dur, 0, d.Duration())
+	if p < 0 || d.Len() < p {
+		return fmt.Errorf("wav: seek position %v out of range [%v, %v]", p, 0, d.Len())
 	}
-	frame := int32(dur * time.Duration(d.h.SampleRate) / time.Second)
-	pos := frame * int32(d.h.BytesPerFrame)
+	pos := int32(p) * int32(d.h.BytesPerFrame)
 	_, err := seeker.Seek(int64(pos)+44, io.SeekStart) // 44 is the size of the header
 	if err != nil {
 		return errors.Wrap(err, "wav: seek error")

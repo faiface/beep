@@ -1,19 +1,16 @@
 package beep_test
 
 import (
-	"math"
 	"math/rand"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/faiface/beep"
 )
 
 // randomDataStreamer generates random samples of duration d and returns a Streamer which streams
 // them and the data itself.
-func randomDataStreamer(d time.Duration) (s beep.Streamer, data [][2]float64) {
-	numSamples := int(math.Ceil(d.Seconds() * float64(beep.SampleRate)))
+func randomDataStreamer(numSamples int) (s beep.Streamer, data [][2]float64) {
 	data = make([][2]float64, numSamples)
 	for i := range data {
 		data[i][0] = rand.Float64()*2 - 1
@@ -46,13 +43,12 @@ func collect(s beep.Streamer) [][2]float64 {
 
 func TestTake(t *testing.T) {
 	for i := 0; i < 7; i++ {
-		total := time.Nanosecond * time.Duration(1e8+rand.Intn(1e9))
+		total := rand.Intn(1e5) + 1e4
 		s, data := randomDataStreamer(total)
-		d := time.Nanosecond * time.Duration(rand.Int63n(total.Nanoseconds()))
-		numSamples := int(math.Ceil(d.Seconds() * float64(beep.SampleRate)))
+		take := rand.Intn(total)
 
-		want := data[:numSamples]
-		got := collect(beep.Take(d, s))
+		want := data[:take]
+		got := collect(beep.Take(take, s))
 
 		if !reflect.DeepEqual(want, got) {
 			t.Error("Take not working correctly")
@@ -67,7 +63,7 @@ func TestSeq(t *testing.T) {
 		data = make([][][2]float64, n)
 	)
 	for i := range s {
-		s[i], data[i] = randomDataStreamer(time.Nanosecond * time.Duration(1e8+rand.Intn(1e9)))
+		s[i], data[i] = randomDataStreamer(rand.Intn(1e5) + 1e4)
 	}
 
 	var want [][2]float64
@@ -89,7 +85,7 @@ func TestMix(t *testing.T) {
 		data = make([][][2]float64, n)
 	)
 	for i := range s {
-		s[i], data[i] = randomDataStreamer(time.Nanosecond * time.Duration(1e8+rand.Intn(1e9)))
+		s[i], data[i] = randomDataStreamer(rand.Intn(1e5) + 1e4)
 	}
 
 	maxLen := 0

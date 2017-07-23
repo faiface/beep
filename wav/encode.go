@@ -36,7 +36,7 @@ func Encode(w io.WriteSeeker, s beep.Streamer, format beep.Format) (err error) {
 		FormatType:    1,
 		NumChans:      int16(format.NumChannels),
 		SampleRate:    int32(format.SampleRate),
-		ByteRate:      int32(format.SampleRate * format.NumChannels * format.Precision),
+		ByteRate:      int32(int(format.SampleRate) * format.NumChannels * format.Precision),
 		BytesPerFrame: int16(format.NumChannels * format.Precision),
 		BitsPerSample: int16(format.Precision) * 8,
 		DataMark:      [4]byte{'d', 'a', 't', 'a'},

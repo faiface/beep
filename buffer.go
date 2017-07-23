@@ -6,10 +6,23 @@ import (
 	"time"
 )
 
+// SampleRate is the number of samples per second.
+type SampleRate int
+
+// D returns the duration of n samples.
+func (sr SampleRate) D(n int) time.Duration {
+	return time.Second * time.Duration(n) / time.Duration(sr)
+}
+
+// N returns the number of samples that last for d duration.
+func (sr SampleRate) N(d time.Duration) int {
+	return int(d * time.Duration(sr) / time.Second)
+}
+
 // Format is the format of a Buffer or another audio source.
 type Format struct {
 	// SampleRate is the number of samples per second.
-	SampleRate int
+	SampleRate SampleRate
 
 	// NumChannels is the number of channels. The value of 1 is mono, the value of 2 is stereo.
 	// The samples should always be interleaved.
@@ -25,16 +38,6 @@ type Format struct {
 // This is equal to f.NumChannels * f.Precision.
 func (f Format) Width() int {
 	return f.NumChannels * f.Precision
-}
-
-// Duration returns the duration of n samples in this format.
-func (f Format) Duration(n int) time.Duration {
-	return time.Second * time.Duration(n) / time.Duration(f.SampleRate)
-}
-
-// NumSamples returns the number of samples in this format which last for d duration.
-func (f Format) NumSamples(d time.Duration) int {
-	return int(d * time.Duration(f.SampleRate) / time.Second)
 }
 
 // EncodeSigned encodes a single sample in f.Width() bytes to p in signed format.
@@ -174,18 +177,13 @@ func (b *Buffer) Format() Format {
 	return b.f
 }
 
-// Duration returns the total duration of the audio data which is currently in the Buffer.
-func (b *Buffer) Duration() time.Duration {
-	return b.f.Duration(len(b.data) / b.f.Width())
+// Len returns the number of samples currently in the Buffer.
+func (b *Buffer) Len() int {
+	return len(b.data) / b.f.Width()
 }
 
-// Pop removes audio data from the beginning of the Buffer of the total duration of d. If the Buffer
-// contains less data, all data will be removed from the Buffer without error.
-func (b *Buffer) Pop(d time.Duration) {
-	if d > b.Duration() {
-		d = b.Duration()
-	}
-	n := b.f.NumSamples(d)
+// Pop removes n samples from the beginning of the Buffer.
+func (b *Buffer) Pop(n int) {
 	b.data = b.data[n:]
 }
 
@@ -206,15 +204,12 @@ func (b *Buffer) Append(s Streamer) {
 	}
 }
 
-// Streamer returns a StreamSeeker which streams audio data contained inside the Buffer in the given
-// time interval. If from is less than 0 or to is more than b.Duration() or to is less than from,
-// this method panics.
-func (b *Buffer) Streamer(from, to time.Duration) StreamSeeker {
-	fromByte := b.f.NumSamples(from) * b.f.Width()
-	toByte := b.f.NumSamples(to) * b.f.Width()
+// Streamer returns a StreamSeeker which streams samples in the given interval (including from,
+// excluding to). If from<0 or to>b.Len() or to<from, this method panics.
+func (b *Buffer) Streamer(from, to int) StreamSeeker {
 	return &bufferStreamer{
 		f:    b.f,
-		data: b.data[fromByte:toByte],
+		data: b.data[from*b.f.Width() : to*b.f.Width()],
 		pos:  0,
 	}
 }
@@ -245,18 +240,18 @@ func (bs *bufferStreamer) Err() error {
 	return nil
 }
 
-func (bs *bufferStreamer) Duration() time.Duration {
-	return bs.f.Duration(len(bs.data) / bs.f.Width())
+func (bs *bufferStreamer) Len() int {
+	return len(bs.data) / bs.f.Width()
 }
 
-func (bs *bufferStreamer) Position() time.Duration {
-	return bs.f.Duration(bs.pos / bs.f.Width())
+func (bs *bufferStreamer) Position() int {
+	return bs.pos / bs.f.Width()
 }
 
-func (bs *bufferStreamer) Seek(d time.Duration) error {
-	if d < 0 || bs.Duration() < d {
-		return fmt.Errorf("buffer: seek duration %v out of range [%v, %v]", d, 0, bs.Duration())
+func (bs *bufferStreamer) Seek(p int) error {
+	if p < 0 || bs.Len() < p {
+		return fmt.Errorf("buffer: seek position %v out of range [%v, %v]", p, 0, bs.Len())
 	}
-	bs.pos = bs.f.NumSamples(d) * bs.f.Width()
+	bs.pos = p * bs.f.Width()
 	return nil
 }

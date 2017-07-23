@@ -12,7 +12,7 @@ func TestFormatEncodeDecode(t *testing.T) {
 	formats := make(chan beep.Format)
 	go func() {
 		defer close(formats)
-		for _, sampleRate := range []int{100, 2347, 44100, 48000} {
+		for _, sampleRate := range []beep.SampleRate{100, 2347, 44100, 48000} {
 			for _, numChannels := range []int{1, 2, 3, 4} {
 				for _, precision := range []int{1, 2, 3, 4, 5, 6} {
 					formats <- beep.Format{

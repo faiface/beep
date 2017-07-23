@@ -1,9 +1,7 @@
 package speaker
 
 import (
-	"math"
 	"sync"
-	"time"
 
 	"github.com/faiface/beep"
 	"github.com/hajimehoshi/oto"
@@ -21,10 +19,10 @@ var (
 
 // Init initializes audio playback through speaker. Must be called before using this package.
 //
-// The bufferSize argument specifies the length of the speaker's buffer. Bigger bufferSize means
-// lower CPU usage and more reliable playback. Lower bufferSize means better responsiveness and less
-// delay.
-func Init(sampleRate int, bufferSize time.Duration) error {
+// The bufferSize argument specifies the number of samples of the speaker's buffer. Bigger
+// bufferSize means lower CPU usage and more reliable playback. Lower bufferSize means better
+// responsiveness and less delay.
+func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -35,14 +33,12 @@ func Init(sampleRate int, bufferSize time.Duration) error {
 
 	mixer = beep.Mixer{}
 
-	numSamples := int(math.Ceil(bufferSize.Seconds() * float64(sampleRate)))
-	numBytes := numSamples * 4
-
-	samples = make([][2]float64, numSamples)
+	numBytes := bufferSize * 4
+	samples = make([][2]float64, bufferSize)
 	buf = make([]byte, numBytes)
 
 	var err error
-	player, err = oto.NewPlayer(sampleRate, 2, 2, numBytes)
+	player, err = oto.NewPlayer(int(sampleRate), 2, 2, numBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize speaker")
 	}

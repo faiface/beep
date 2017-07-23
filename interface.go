@@ -1,7 +1,5 @@
 package beep
 
-import "time"
-
 // Streamer is able to stream a finite or infinite sequence of audio samples.
 type Streamer interface {
 	// Stream copies at most len(samples) next audio samples to the samples slice.
@@ -50,18 +48,18 @@ type Streamer interface {
 type StreamSeeker interface {
 	Streamer
 
-	// Duration returns the total duration of the Streamer.
-	Duration() time.Duration
+	// Duration returns the total number of samples of the Streamer.
+	Len() int
 
 	// Position returns the current position of the Streamer. This value is between 0 and the
-	// total duration.
-	Position() time.Duration
+	// total length.
+	Position() int
 
 	// Seek sets the position of the Streamer to the provided value.
 	//
 	// If an error occurs during seeking, the position remains unchanged. This error will not be
 	// returned through the Streamer's Err method.
-	Seek(d time.Duration) error
+	Seek(p int) error
 }
 
 // StreamCloser is a Streamer streaming from a resource which needs to be released, such as a file
@@ -77,9 +75,9 @@ type StreamCloser interface {
 // StreamSeekCloser is a union of StreamSeeker and StreamCloser.
 type StreamSeekCloser interface {
 	Streamer
-	Duration() time.Duration
-	Position() time.Duration
-	Seek(d time.Duration) error
+	Len() int
+	Position() int
+	Seek(p int) error
 	Close() error
 }
 
