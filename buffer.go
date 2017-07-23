@@ -183,6 +183,8 @@ func (b *Buffer) Len() int {
 }
 
 // Pop removes n samples from the beginning of the Buffer.
+//
+// Existing Streamers are not affected.
 func (b *Buffer) Pop(n int) {
 	b.data = b.data[n:]
 }
@@ -206,6 +208,9 @@ func (b *Buffer) Append(s Streamer) {
 
 // Streamer returns a StreamSeeker which streams samples in the given interval (including from,
 // excluding to). If from<0 or to>b.Len() or to<from, this method panics.
+//
+// When using multiple goroutines, synchronization of Streamers with the Buffer is not required,
+// as Buffer is persistent (but efficient and garbage collected).
 func (b *Buffer) Streamer(from, to int) StreamSeeker {
 	return &bufferStreamer{
 		f:    b.f,
