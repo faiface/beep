@@ -1,13 +1,13 @@
 package beep
 
-// Take returns a Streamer which streams at most n samples from s.
+// Take returns a Streamer which streams at most num samples from s.
 //
 // The returned Streamer propagates s's errors throught Err.
-func Take(n int, s Streamer) Streamer {
+func Take(num int, s Streamer) Streamer {
 	return &take{
 		s:          s,
 		currSample: 0,
-		numSamples: n,
+		numSamples: num,
 	}
 }
 
