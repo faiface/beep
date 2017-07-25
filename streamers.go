@@ -31,3 +31,26 @@ func Callback(f func()) Streamer {
 		return 0, false
 	})
 }
+
+// Generate returns a Streamer which successively streams Streamers obtains by calling the provided
+// g function. The streaming stops when g returns nil.
+func Generate(g func() Streamer) Streamer {
+	s := g()
+	return StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
+		if s == nil {
+			return 0, false
+		}
+		for len(samples) > 0 {
+			if s == nil {
+				break
+			}
+			sn, sok := s.Stream(samples)
+			if !sok {
+				s = g()
+			}
+			samples = samples[sn:]
+			n += sn
+		}
+		return n, true
+	})
+}
