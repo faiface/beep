@@ -37,8 +37,15 @@ func Callback(f func()) Streamer {
 //
 // Generate does not propagate errors from the generated Streamers.
 func Generate(g func() Streamer) Streamer {
-	s := g()
+	var (
+		s     Streamer
+		first = true
+	)
 	return StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
+		if first {
+			s = g()
+			first = false
+		}
 		if s == nil {
 			return 0, false
 		}
