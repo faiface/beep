@@ -34,6 +34,8 @@ func Callback(f func()) Streamer {
 
 // Generate returns a Streamer which successively streams Streamers obtains by calling the provided
 // g function. The streaming stops when g returns nil.
+//
+// Generate does not propagate errors from the generated Streamers.
 func Generate(g func() Streamer) Streamer {
 	s := g()
 	return StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
