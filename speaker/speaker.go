@@ -61,6 +61,8 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 
 // Lock locks the speaker. While locked, speaker won't pull new data from the playing Stramers. Lock
 // if you want to modify any currently playing Streamers to avoid race conditions.
+//
+// Always lock speaker for as little time as possible, to avoid playback glitches.
 func Lock() {
 	mu.Lock()
 }
