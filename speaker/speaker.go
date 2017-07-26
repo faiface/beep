@@ -1,3 +1,4 @@
+// Package speaker implements playback of beep.Streamer values through physical speakers.
 package speaker
 
 import (
