@@ -32,11 +32,11 @@ func Callback(f func()) Streamer {
 	})
 }
 
-// Generate returns a Streamer which successively streams Streamers obtains by calling the provided
-// g function. The streaming stops when g returns nil.
+// Iterate returns a Streamer which successively streams Streamers obtains by calling the provided g
+// function. The streaming stops when g returns nil.
 //
-// Generate does not propagate errors from the generated Streamers.
-func Generate(g func() Streamer) Streamer {
+// Iterate does not propagate errors from the generated Streamers.
+func Iterate(g func() Streamer) Streamer {
 	var (
 		s     Streamer
 		first = true
