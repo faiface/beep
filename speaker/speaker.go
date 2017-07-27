@@ -10,12 +10,13 @@ import (
 )
 
 var (
-	mu      sync.Mutex
-	mixer   beep.Mixer
-	samples [][2]float64
-	buf     []byte
-	player  *oto.Player
-	done    chan struct{}
+	mu       sync.Mutex
+	mixer    beep.Mixer
+	samples  [][2]float64
+	buf      []byte
+	player   *oto.Player
+	underrun func()
+	done     chan struct{}
 )
 
 // Init initializes audio playback through speaker. Must be called before using this package.
@@ -44,6 +45,10 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 		return errors.Wrap(err, "failed to initialize speaker")
 	}
 
+	if underrun != nil {
+		player.SetUnderrunCallback(underrun)
+	}
+
 	done = make(chan struct{})
 
 	go func() {
@@ -58,6 +63,21 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	}()
 
 	return nil
+}
+
+// UnderrunCallback sets a function which will be called when an underrun occurs. This is useful for
+// debugging and optimization purposes.
+//
+// Underrun happens when program doesn't keep up with the audio playback and doesn't supply audio
+// data quickly enough. To fix an underrun, you either need to optimize your audio processing code,
+// or increase the buffer size.
+func UnderrunCallback(f func()) {
+	mu.Lock()
+	underrun = f
+	if player != nil {
+		player.SetUnderrunCallback(underrun)
+	}
+	mu.Unlock()
 }
 
 // Lock locks the speaker. While locked, speaker won't pull new data from the playing Stramers. Lock
