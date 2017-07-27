@@ -71,6 +71,8 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 // Underrun happens when program doesn't keep up with the audio playback and doesn't supply audio
 // data quickly enough. To fix an underrun, you either need to optimize your audio processing code,
 // or increase the buffer size.
+//
+// Underrun detection currently works on Linux.
 func UnderrunCallback(f func()) {
 	mu.Lock()
 	underrun = f
