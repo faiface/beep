@@ -11,7 +11,7 @@ import (
 )
 
 // Decode takes a ReadCloser containing audio data in WAVE format and returns a StreamSeekCloser,
-// which streams that audio. The Seek method will return an error if rc is not io.Seeker.
+// which streams that audio. The Seek method will panic if rc is not io.Seeker.
 //
 // Do not close the supplied ReadSeekCloser, instead, use the Close method of the returned
 // StreamSeekCloser when you want to release the resources.
@@ -94,7 +94,7 @@ func (d *decoder) Position() int {
 func (d *decoder) Seek(p int) error {
 	seeker, ok := d.rc.(io.Seeker)
 	if !ok {
-		return fmt.Errorf("wav: seek: resource is not io.Seeker")
+		panic(fmt.Errorf("wav: seek: resource is not io.Seeker"))
 	}
 	if p < 0 || d.Len() < p {
 		return fmt.Errorf("wav: seek position %v out of range [%v, %v]", p, 0, d.Len())
