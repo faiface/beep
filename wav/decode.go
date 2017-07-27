@@ -77,37 +77,6 @@ type decoder struct {
 	err error
 }
 
-func (d *decoder) Err() error {
-	return d.err
-}
-
-func (d *decoder) Len() int {
-	numBytes := time.Duration(d.h.DataSize)
-	perFrame := time.Duration(d.h.BytesPerFrame)
-	return int(numBytes / perFrame)
-}
-
-func (d *decoder) Position() int {
-	return int(d.pos / int32(d.h.BytesPerFrame))
-}
-
-func (d *decoder) Seek(p int) error {
-	seeker, ok := d.rc.(io.Seeker)
-	if !ok {
-		panic(fmt.Errorf("wav: seek: resource is not io.Seeker"))
-	}
-	if p < 0 || d.Len() < p {
-		return fmt.Errorf("wav: seek position %v out of range [%v, %v]", p, 0, d.Len())
-	}
-	pos := int32(p) * int32(d.h.BytesPerFrame)
-	_, err := seeker.Seek(int64(pos)+44, io.SeekStart) // 44 is the size of the header
-	if err != nil {
-		return errors.Wrap(err, "wav: seek error")
-	}
-	d.pos = pos
-	return nil
-}
-
 func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 	if d.err != nil || d.pos >= d.h.DataSize {
 		return 0, false
@@ -144,6 +113,37 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 	}
 	d.pos += int32(n)
 	return n / bytesPerFrame, true
+}
+
+func (d *decoder) Err() error {
+	return d.err
+}
+
+func (d *decoder) Len() int {
+	numBytes := time.Duration(d.h.DataSize)
+	perFrame := time.Duration(d.h.BytesPerFrame)
+	return int(numBytes / perFrame)
+}
+
+func (d *decoder) Position() int {
+	return int(d.pos / int32(d.h.BytesPerFrame))
+}
+
+func (d *decoder) Seek(p int) error {
+	seeker, ok := d.rc.(io.Seeker)
+	if !ok {
+		panic(fmt.Errorf("wav: seek: resource is not io.Seeker"))
+	}
+	if p < 0 || d.Len() < p {
+		return fmt.Errorf("wav: seek position %v out of range [%v, %v]", p, 0, d.Len())
+	}
+	pos := int32(p) * int32(d.h.BytesPerFrame)
+	_, err := seeker.Seek(int64(pos)+44, io.SeekStart) // 44 is the size of the header
+	if err != nil {
+		return errors.Wrap(err, "wav: seek error")
+	}
+	d.pos = pos
+	return nil
 }
 
 func (d *decoder) Close() error {
