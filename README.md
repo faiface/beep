@@ -6,6 +6,15 @@ A small package that brings sound to any Go program (and real-time audio process
 $ go get github.com/faiface/beep
 ```
 
+## Quick recipe
+
+This quick recipe should play ~/go/src/github.com/faiface/beep/example/beep-wav/sound.wav
+
+    go get github.com/faiface/beep 
+    go get github.com/hajimehoshi/oto
+    go install github.com/faiface/beep/example/beep-wav
+    (cd ~/go/src/github.com/faiface/beep/example/beep-wav && beep-wav)
+
 ## A (very short) Tour of Beep
 
 Let's get started! Open an audio file (let's ignore errors for now, never do that in production).
