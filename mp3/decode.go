@@ -53,6 +53,12 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 	var tmp [gomp3BytesPerFrame]byte
 	for i := range samples {
 		dn, err := d.d.Read(tmp[:])
+		if dn == len(tmp) {
+			samples[i], _ = d.f.DecodeSigned(tmp[:])
+			d.pos += dn
+			n++
+			ok = true
+		}
 		if err == io.EOF {
 			break
 		}
@@ -60,11 +66,8 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 			d.err = errors.Wrap(err, "mp3")
 			break
 		}
-		samples[i], _ = d.f.DecodeSigned(tmp[:])
-		d.pos += dn
-		n++
 	}
-	return n, true
+	return n, ok
 }
 
 func (d *decoder) Err() error {
