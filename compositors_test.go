@@ -30,7 +30,7 @@ func randomDataStreamer(numSamples int) (s beep.Streamer, data [][2]float64) {
 func collect(s beep.Streamer) [][2]float64 {
 	var (
 		result [][2]float64
-		buf    [512][2]float64
+		buf    [479][2]float64
 	)
 	for {
 		n, ok := s.Stream(buf[:])
