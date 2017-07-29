@@ -17,7 +17,7 @@ import "fmt"
 // at the speaker's native sample rate and thus we need to resample.
 //
 // The quality argument specifies the quality of the resampling process. Higher quality implies
-// worse performance. Values below 0 or above 64 are invalid and Resample will panic. Here's a table
+// worse performance. Values below 1 or above 64 are invalid and Resample will panic. Here's a table
 // for deciding which quality to pick.
 //
 //   quality | use case
@@ -29,6 +29,8 @@ import "fmt"
 //
 // Sane quality values are usually below 16. Higher values will consume too much CPU, giving
 // negligible quality improvements.
+//
+// Resample propagates errors from s.
 func Resample(quality int, old, new SampleRate, s Streamer) Streamer {
 	if quality < 1 || 64 < quality {
 		panic(fmt.Errorf("resample: invalid quality: %d", quality))
