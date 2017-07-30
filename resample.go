@@ -3,7 +3,7 @@ package beep
 import "fmt"
 
 // Resample takes a Streamer which is assumed to stream at the old sample rate and returns a
-// Streamer, which streams the data from the original Streamer, but in the new sample rate.
+// Streamer, which streams the data from the original Streamer resampled to the new sample rate.
 //
 // This is, for example, useful when mixing multiple Streamer with different sample rates, either
 // through a beep.Mixer, or through a speaker. Speaker has a constant sample rate. Thus, playing
