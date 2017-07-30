@@ -95,7 +95,6 @@ func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
 				case k >= r.off+len(r.buf2):
 					// we load into buf1
 					sn, _ := r.s.Stream(r.buf1)
-					r.buf1 = r.buf1[:sn]
 					// this condition happens when the original Streamer got
 					// drained and j is after the end of the
 					// original data
@@ -112,6 +111,7 @@ func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
 					// otherwise everything is fine, we swap buffers and start
 					// calculating the sample again
 					r.off += len(r.buf2)
+					r.buf1 = r.buf1[:sn]
 					r.buf1, r.buf2 = r.buf2, r.buf1
 					goto reload
 				}
