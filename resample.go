@@ -23,7 +23,7 @@ import "fmt"
 //   quality | use case
 //   --------|---------
 //   1       | very high performance, on-the-fly resampling, low quality
-//   3-4     | good performance, on-the-fly resampling, good quality,
+//   3-4     | good performance, on-the-fly resampling, good quality
 //   6       | higher CPU usage, usually not suitable for on-the-fly resampling, very good quality
 //   >6      | even higher CPU usage, for offline resampling, very good quality
 //
