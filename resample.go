@@ -80,7 +80,7 @@ func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
 			j := float64(r.pos) * r.ratio
 
 			// find quality*2 closest samples to j and translate them to points for interpolation
-			for pi := 0; pi < len(r.pts); pi++ {
+			for pi := range r.pts {
 				// calculate the index of one of the closest samples
 				k := int(j) + pi - len(r.pts)/2 + 1
 
