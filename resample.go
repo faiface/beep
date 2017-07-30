@@ -73,7 +73,7 @@ func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
 	}
 	// we start resampling, sample by sample
 	for len(samples) > 0 {
-	reload:
+	again:
 		for c := range samples[0] {
 			// calculate the current position in the original data
 			j := float64(r.pos) * r.ratio
@@ -113,7 +113,7 @@ func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
 					r.off += len(r.buf2)
 					r.buf1 = r.buf1[:sn]
 					r.buf1, r.buf2 = r.buf2, r.buf1
-					goto reload
+					goto again
 				}
 
 				r.pts[pi] = point{float64(k), y}
