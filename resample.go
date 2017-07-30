@@ -66,7 +66,8 @@ type resample struct {
 }
 
 func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
-	if r.first { // if it's the first time, we need to fill buf2 with initial data, buf1 remains zeroed
+	// if it's the first time, we need to fill buf2 with initial data, buf1 remains zeroed
+	if r.first {
 		sn, _ := r.s.Stream(r.buf2)
 		r.buf2 = r.buf2[:sn]
 		r.first = false
