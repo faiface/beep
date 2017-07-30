@@ -10,7 +10,8 @@ import "fmt"
 // Streamer which stream at a different sample rate will lead to a changed speed and pitch of the
 // playback.
 //
-//   sr := beep.SampleRate(48000) speaker.Init(sr, sr.N(time.Second/2))
+//   sr := beep.SampleRate(48000)
+//   speaker.Init(sr, sr.N(time.Second/2))
 //   speaker.Play(beep.Resample(3, format.SampleRate, sr, s))
 //
 // In the example, the original sample rate of the source if format.SampleRate. We want to play it
