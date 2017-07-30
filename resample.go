@@ -36,9 +36,9 @@ func Resample(quality int, old, new SampleRate, s Streamer) Streamer {
 }
 
 // ResampleRatio is same as Resample, except it takes the ratio of the old and the new sample rate,
-// specifically, the old sample rate divided by the new sample rate. Aside from resampling, this can
-// be used to change the speed of the audio. For example, resampling at the ratio of 2 and playing
-// at the original sample rate will cause doubled speed in playback.
+// specifically, the old sample rate divided by the new sample rate. Aside from correcting the
+// sample rate, this can be used to change the speed of the audio. For example, resampling at the
+// ratio of 2 and playing at the original sample rate will cause doubled speed in playback.
 func ResampleRatio(quality int, ratio float64, s Streamer) Streamer {
 	if quality < 1 || 64 < quality {
 		panic(fmt.Errorf("resample: invalid quality: %d", quality))
