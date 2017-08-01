@@ -11,6 +11,10 @@ func TestResample(t *testing.T) {
 	for _, numSamples := range []int{8, 100, 500, 1000, 50000} {
 		for _, old := range []beep.SampleRate{100, 2000, 44100, 48000} {
 			for _, new := range []beep.SampleRate{100, 2000, 44100, 48000} {
+				if numSamples/int(old)*int(new) > 1e6 {
+					continue // skip too expensive combinations
+				}
+
 				s, data := randomDataStreamer(numSamples)
 
 				want := resampleCorrect(3, old, new, data)
