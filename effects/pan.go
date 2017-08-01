@@ -13,14 +13,16 @@ type Pan struct {
 // Stream streams the wrapped Streamer balanced by Pan.
 func (p *Pan) Stream(samples [][2]float64) (n int, ok bool) {
 	n, ok = p.Streamer.Stream(samples)
-	for i := range samples[:n] {
-		l := samples[i][0]
-		r := samples[i][1]
-		switch {
-		case p.Pan < 0:
+	switch {
+	case p.Pan < 0:
+		for i := range samples[:n] {
+			r := samples[i][1]
 			samples[i][0] += -p.Pan * r
 			samples[i][1] -= -p.Pan * r
-		case p.Pan > 0:
+		}
+	case p.Pan > 0:
+		for i := range samples[:n] {
+			l := samples[i][0]
 			samples[i][0] -= p.Pan * l
 			samples[i][1] += p.Pan * l
 		}
