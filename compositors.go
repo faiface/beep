@@ -5,28 +5,26 @@ package beep
 // The returned Streamer propagates s's errors throught Err.
 func Take(num int, s Streamer) Streamer {
 	return &take{
-		s:          s,
-		currSample: 0,
-		numSamples: num,
+		s:       s,
+		remains: num,
 	}
 }
 
 type take struct {
-	s          Streamer
-	currSample int
-	numSamples int
+	s       Streamer
+	remains int
 }
 
 func (t *take) Stream(samples [][2]float64) (n int, ok bool) {
-	if t.currSample >= t.numSamples {
+	if t.remains <= 0 {
 		return 0, false
 	}
-	toStream := t.numSamples - t.currSample
+	toStream := t.remains
 	if len(samples) < toStream {
 		toStream = len(samples)
 	}
 	n, ok = t.s.Stream(samples[:toStream])
-	t.currSample += n
+	t.remains -= n
 	return n, ok
 }
 
