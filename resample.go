@@ -32,7 +32,7 @@ import "fmt"
 // negligible quality improvements.
 //
 // Resample propagates errors from s.
-func Resample(quality int, old, new SampleRate, s Streamer) Streamer {
+func Resample(quality int, old, new SampleRate, s Streamer) *Resampler {
 	return ResampleRatio(quality, float64(old)/float64(new), s)
 }
 
@@ -40,11 +40,11 @@ func Resample(quality int, old, new SampleRate, s Streamer) Streamer {
 // specifically, the old sample rate divided by the new sample rate. Aside from correcting the
 // sample rate, this can be used to change the speed of the audio. For example, resampling at the
 // ratio of 2 and playing at the original sample rate will cause doubled speed in playback.
-func ResampleRatio(quality int, ratio float64, s Streamer) Streamer {
+func ResampleRatio(quality int, ratio float64, s Streamer) *Resampler {
 	if quality < 1 || 64 < quality {
 		panic(fmt.Errorf("resample: invalid quality: %d", quality))
 	}
-	return &resample{
+	return &Resampler{
 		s:     s,
 		ratio: ratio,
 		first: true,
@@ -56,7 +56,10 @@ func ResampleRatio(quality int, ratio float64, s Streamer) Streamer {
 	}
 }
 
-type resample struct {
+// Resampler is a Streamer created by Resample and ResampleRatio functions. It allows dynamic
+// changing of the resampling ratio, which can be useful for dynamically changing the speed of
+// streaming.
+type Resampler struct {
 	s          Streamer     // the orignal streamer
 	ratio      float64      // old sample rate / new sample rate
 	first      bool         // true when Stream was not called before
@@ -66,7 +69,8 @@ type resample struct {
 	pos        int          // pos is the current position in the resampled data
 }
 
-func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
+// Stream streams the original audio resampled according to the current ratio.
+func (r *Resampler) Stream(samples [][2]float64) (n int, ok bool) {
 	// if it's the first time, we need to fill buf2 with initial data, buf1 remains zeroed
 	if r.first {
 		sn, _ := r.s.Stream(r.buf2)
@@ -132,8 +136,15 @@ func (r *resample) Stream(samples [][2]float64) (n int, ok bool) {
 	return n, true
 }
 
-func (r *resample) Err() error {
+// Err propagates the original Streamer's errors.
+func (r *Resampler) Err() error {
 	return r.s.Err()
+}
+
+// SetRatio sets the resampling ratio. This does not cause any glitches in the stream.
+func (r *Resampler) SetRatio(ratio float64) {
+	r.pos = int(float64(r.pos) * r.ratio / ratio)
+	r.ratio = ratio
 }
 
 // lagrange calculates the value at x of a polynomial of order len(pts)+1 which goes through all
