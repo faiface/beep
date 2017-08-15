@@ -109,3 +109,29 @@ func TestMix(t *testing.T) {
 		t.Error("Mix not working correctly")
 	}
 }
+
+func TestDup(t *testing.T) {
+	for i := 0; i < 7; i++ {
+		s, data := randomDataStreamer(rand.Intn(1e5) + 1e4)
+		st, su := beep.Dup(s)
+
+		var tData, uData [][2]float64
+		for {
+			buf := make([][2]float64, rand.Intn(1e4))
+			tn, tok := st.Stream(buf)
+			tData = append(tData, buf[:tn]...)
+
+			buf = make([][2]float64, rand.Intn(1e4))
+			un, uok := su.Stream(buf)
+			uData = append(uData, buf[:un]...)
+
+			if !tok && !uok {
+				break
+			}
+		}
+
+		if !reflect.DeepEqual(data, tData) || !reflect.DeepEqual(data, uData) {
+			t.Error("Dup not working correctly")
+		}
+	}
+}

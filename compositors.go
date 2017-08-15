@@ -137,3 +137,37 @@ func Mix(s ...Streamer) Streamer {
 		return n, ok
 	})
 }
+
+// Dup returns two Streamers which both stream the same data as the original s. The two Streamers
+// can't be used concurrently without synchronization.
+func Dup(s Streamer) (t, u Streamer) {
+	var tBuf, uBuf [][2]float64
+	return &dup{&tBuf, &uBuf, s}, &dup{&uBuf, &tBuf, s}
+}
+
+type dup struct {
+	myBuf, itsBuf *[][2]float64
+	s             Streamer
+}
+
+func (d *dup) Stream(samples [][2]float64) (n int, ok bool) {
+	buf := *d.myBuf
+	n = copy(samples, buf)
+	ok = len(buf) > 0
+	buf = buf[n:]
+	samples = samples[n:]
+	*d.myBuf = buf
+
+	if len(samples) > 0 {
+		sn, sok := d.s.Stream(samples)
+		n += sn
+		ok = ok || sok
+		*d.itsBuf = append(*d.itsBuf, samples[:sn]...)
+	}
+
+	return n, ok
+}
+
+func (d *dup) Err() error {
+	return d.s.Err()
+}
