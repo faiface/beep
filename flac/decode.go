@@ -89,8 +89,8 @@ func (d *decoder) refill() error {
 	switch {
 	case bps == 8 && nchannels >= 2:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int16(frame.Subframes[0].Samples[i])) / (1<<7 - 1)
-			d.buf[i][1] = float64(int16(frame.Subframes[1].Samples[i])) / (1<<7 - 1)
+			d.buf[i][0] = float64(int8(frame.Subframes[0].Samples[i])) / (1<<7 - 1)
+			d.buf[i][1] = float64(int8(frame.Subframes[1].Samples[i])) / (1<<7 - 1)
 		}
 	case bps == 16 && nchannels >= 2:
 		for i := 0; i < n; i++ {
@@ -99,8 +99,8 @@ func (d *decoder) refill() error {
 		}
 	case bps == 24 && nchannels >= 2:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int16(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
-			d.buf[i][1] = float64(int16(frame.Subframes[1].Samples[i])) / (1<<23 - 1)
+			d.buf[i][0] = float64(int32(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
+			d.buf[i][1] = float64(int32(frame.Subframes[1].Samples[i])) / (1<<23 - 1)
 		}
 	default:
 		panic(fmt.Errorf("support for %d bits-per-sample and %d channels combination not yet implemented", bps, nchannels))
