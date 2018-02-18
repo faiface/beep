@@ -75,5 +75,7 @@ And finally, we'll replace the hacky `select {}` with a receive from the channel
 
 And that's it!
 
+For more in-depth journey into the design of Beep, take a look at [my blog post](https://faiface.github.io/post/how-i-built-audio-lib-composite-pattern/).
+
 Take a look at the [documentation](https://godoc.org/github.com/faiface/beep) for other interesting
 things you can do with Beep, such as mixing, looping, audio effects, and other useful stuff.
