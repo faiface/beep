@@ -84,7 +84,7 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 	bytesPerFrame := int(d.h.BytesPerFrame)
 	p := make([]byte, len(samples)*bytesPerFrame)
 	n, err := d.rc.Read(p)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		d.err = err
 	}
 	switch {
