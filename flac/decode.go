@@ -41,6 +41,7 @@ type decoder struct {
 	rc     io.ReadCloser
 	stream *flac.Stream
 	buf    [][2]float64
+	pos    int
 	err    error
 }
 
@@ -64,6 +65,7 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 		n++
 	}
 	d.buf = d.buf[j:]
+	d.pos += n
 	return n, true
 }
 
@@ -128,11 +130,11 @@ func (d *decoder) Err() error {
 }
 
 func (d *decoder) Len() int {
-	panic("not yet implemented")
+	return int(d.stream.Info.NSamples)
 }
 
 func (d *decoder) Position() int {
-	panic("not yet implemented")
+	return d.pos
 }
 
 func (d *decoder) Seek(p int) error {
