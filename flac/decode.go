@@ -56,6 +56,7 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 			// refill buffer.
 			if err := d.refill(); err != nil {
 				d.err = err
+				d.pos += n
 				return n, n > 0
 			}
 			j = 0
