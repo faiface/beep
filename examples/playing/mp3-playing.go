@@ -11,15 +11,15 @@ import (
 )
 
 func main() {
-	// Open first Sample File
+	// Open first sample File
 	f, err := os.Open("sample1.mp3")
 
-	// Check for Errors when opening the file
+	// Check for errors when opening the file
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Decode the .mp3 File, if you have a .wav file, use wav.Decode(f) 
+	// Decode the .mp3 File, if you have a .wav file, use wav.Decode(f)
 	s, format, _ := mp3.Decode(f)
 
 	// Init the Speaker with the SampleRate of the format and a buffer size of 1/10s
@@ -28,7 +28,7 @@ func main() {
 	// Channel, which will signal the end of the playback.
 	playing := make(chan struct{})
 
-	// Now we Play our Stream on the Speaker 
+	// Now we Play our Streamer on the Speaker
 	speaker.Play(beep.Seq(s, beep.Callback(func() {
 		// Callback after the stream Ends
 		close(playing)
