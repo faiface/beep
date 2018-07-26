@@ -48,5 +48,5 @@ func (c *Ctrl) Err() error {
 	if c.Streamer == nil {
 		return nil
 	}
-	return c.Err()
+	return c.Streamer.Err()
 }
