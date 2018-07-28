@@ -90,7 +90,7 @@ func (d *decoder) Seek(p int) error {
 func (d *decoder) Close() error {
 	err := d.closer.Close()
 	if err != nil {
-		return errors.Wrap(err, "oggvorbis")
+		return errors.Wrap(err, "ogg/vorbis")
 	}
 	return nil
 }
