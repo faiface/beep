@@ -21,11 +21,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 			d.rc.Close()
 		}
 	}()
-	rsc, ok := rc.(io.ReadSeeker)
-	if !ok {
-		panic(fmt.Errorf("%T does not implement io.Seeker", rc))
-	}
-	d.stream, err = flac.New(rsc)
+	d.stream, err = flac.New(rc)
 	if err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "flac")
 	}
@@ -139,7 +135,7 @@ func (d *decoder) Position() int {
 }
 
 func (d *decoder) Seek(p int) error {
-	panic("not yet implemented")
+	return errors.New("flac.decoder.Seek: not yet implemented")
 }
 
 func (d *decoder) Close() error {
