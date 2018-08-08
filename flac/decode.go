@@ -99,7 +99,7 @@ func (d *decoder) refill() error {
 	case bps == 24 && nchannels == 1:
 		for i := 0; i < n; i++ {
 			d.buf[i][0] = float64(int32(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
-			d.buf[i][1] = float64(int32(frame.Subframes[1].Samples[i])) / (1<<23 - 1)
+			d.buf[i][1] = float64(int32(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
 		}
 	case bps == 8 && nchannels >= 2:
 		for i := 0; i < n; i++ {
