@@ -71,8 +71,10 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 
 				if d.h.FormatType == -2 {
 					// WAVEFORMATEXTENSIBLE
-					fmtchunk := formatchunkextensible{0, 0, 0, 0, 0, 0, 0, 0, [18]byte{
-						0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
+					fmtchunk := formatchunkextensible{
+						formatchunk{0, 0, 0, 0, 0}, 0, 0, 0,
+						guid{0, 0, 0, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}},
+					}
 					if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
 						return nil, beep.Format{}, errors.New("wav: missing format chunk body")
 					} else {
@@ -82,10 +84,23 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 						d.h.BytesPerFrame = fmtchunk.BytesPerFrame
 						d.h.BitsPerSample = fmtchunk.BitsPerSample
 					}
-					if fmtchunk.SubFormat != [18]byte{0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71} {
-						return nil, beep.Format{}, errors.New(fmt.Sprintf("wav: unsupported sub format type - %s", hex.EncodeToString(fmtchunk.SubFormat[:])))
+
+					// SubFormat is represented by GUID. Plain PCM is KSDATAFORMAT_SUBTYPE_PCM GUID.
+					// See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ksmedia/ns-ksmedia-waveformatextensible
+					pcmguid := guid{
+						0x00000001, 0x0000, 0x0010,
+						[8]byte{0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71},
 					}
-				} else { 
+					if fmtchunk.SubFormat != pcmguid {
+						return nil, beep.Format{}, errors.New(
+							fmt.Sprintf(
+								"wav: unsupported sub format type - %04x-%02x-%02x-%s",
+								fmtchunk.SubFormat.Data1, fmtchunk.SubFormat.Data2, fmtchunk.SubFormat.Data3,
+								hex.EncodeToString(fmtchunk.SubFormat.Data4[:]),
+							),
+						)
+					}
+				} else {
 					// WAVEFORMAT or WAVEFORMATEX
 					fmtchunk := formatchunk{0, 0, 0, 0, 0}
 					if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
@@ -152,6 +167,13 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	return &d, format, nil
 }
 
+type guid struct {
+	Data1 int32
+	Data2 int16
+	Data3 int16
+	Data4 [8]byte
+}
+
 type formatchunk struct {
 	NumChans      int16
 	SampleRate    int32
@@ -161,15 +183,11 @@ type formatchunk struct {
 }
 
 type formatchunkextensible struct {
-	NumChans      int16
-	SampleRate    int32
-	ByteRate      int32
-	BytesPerFrame int16
-	BitsPerSample int16
+	formatchunk
 	SubFormatSize int16
-	Samples       int16
-	ChannelMask   int16
-	SubFormat     [18]byte
+	Samples       int16 // original: union 3 types of WORD member (wValidBisPerSample, wSamplesPerBlock, wReserved)
+	ChannelMask   int32
+	SubFormat     guid
 }
 
 type header struct {
