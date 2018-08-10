@@ -28,7 +28,6 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	if err := binary.Read(rc, binary.LittleEndian, d.h.RiffMark[:]); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav")
 	}
-
 	if string(d.h.RiffMark[:]) != "RIFF" {
 		return nil, beep.Format{}, errors.New(fmt.Sprintf("wav: missing RIFF at the beginning > %s", string(d.h.RiffMark[:])))
 	}
@@ -37,109 +36,92 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	if err := binary.Read(rc, binary.LittleEndian, &d.h.FileSize); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav: missing RIFF file size")
 	}
-
 	if err := binary.Read(rc, binary.LittleEndian, d.h.WaveMark[:]); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav: missing RIFF file type")
 	}
-
 	if string(d.h.WaveMark[:]) != "WAVE" {
 		return nil, beep.Format{}, errors.New("wav: unsupported file type")
 	}
 
 	// check each formtypes
 	ft := [4]byte{0, 0, 0, 0}
-
 	var fs int32 = 0
-
 	for string(ft[:]) != "data" {
-
 		if err = binary.Read(rc, binary.LittleEndian, ft[:]); err != nil {
 			return nil, beep.Format{}, errors.Wrap(err, "wav: missing chunk type")
 		}
-
 		switch {
 		case string(ft[:]) == "fmt ":
-			{
-				d.h.FmtMark = ft
-				if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatSize); err != nil {
-					return nil, beep.Format{}, errors.New("wav: missing format chunk size")
+			d.h.FmtMark = ft
+			if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatSize); err != nil {
+				return nil, beep.Format{}, errors.New("wav: missing format chunk size")
+			}
+			if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatType); err != nil {
+				return nil, beep.Format{}, errors.New("wav: missing format type")
+			}
+			if d.h.FormatType == -2 {
+				// WAVEFORMATEXTENSIBLE
+				fmtchunk := formatchunkextensible{
+					formatchunk{0, 0, 0, 0, 0}, 0, 0, 0,
+					guid{0, 0, 0, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}},
 				}
-
-				if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatType); err != nil {
-					return nil, beep.Format{}, errors.New("wav: missing format type")
-				}
-
-				if d.h.FormatType == -2 {
-					// WAVEFORMATEXTENSIBLE
-					fmtchunk := formatchunkextensible{
-						formatchunk{0, 0, 0, 0, 0}, 0, 0, 0,
-						guid{0, 0, 0, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}},
-					}
-					if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
-						return nil, beep.Format{}, errors.New("wav: missing format chunk body")
-					} else {
-						d.h.NumChans = fmtchunk.NumChans
-						d.h.SampleRate = fmtchunk.SampleRate
-						d.h.ByteRate = fmtchunk.ByteRate
-						d.h.BytesPerFrame = fmtchunk.BytesPerFrame
-						d.h.BitsPerSample = fmtchunk.BitsPerSample
-					}
-
-					// SubFormat is represented by GUID. Plain PCM is KSDATAFORMAT_SUBTYPE_PCM GUID.
-					// See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ksmedia/ns-ksmedia-waveformatextensible
-					pcmguid := guid{
-						0x00000001, 0x0000, 0x0010,
-						[8]byte{0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71},
-					}
-					if fmtchunk.SubFormat != pcmguid {
-						return nil, beep.Format{}, errors.New(
-							fmt.Sprintf(
-								"wav: unsupported sub format type - %08x-%04x-%04x-%s",
-								fmtchunk.SubFormat.Data1, fmtchunk.SubFormat.Data2, fmtchunk.SubFormat.Data3,
-								hex.EncodeToString(fmtchunk.SubFormat.Data4[:]),
-							),
-						)
-					}
+				if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
+					return nil, beep.Format{}, errors.New("wav: missing format chunk body")
 				} else {
-					// WAVEFORMAT or WAVEFORMATEX
-					fmtchunk := formatchunk{0, 0, 0, 0, 0}
-					if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
-						return nil, beep.Format{}, errors.New("wav: missing format chunk body")
-					} else {
-						d.h.NumChans = fmtchunk.NumChans
-						d.h.SampleRate = fmtchunk.SampleRate
-						d.h.ByteRate = fmtchunk.ByteRate
-						d.h.BytesPerFrame = fmtchunk.BytesPerFrame
-						d.h.BitsPerSample = fmtchunk.BitsPerSample
-					}
-					// it would be skipping cbSize (WAVEFORMATEX's last member).
-					if d.h.FormatSize > 16 {
-						trash := make([]byte, d.h.FormatSize-16)
-						if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
-							return nil, beep.Format{}, errors.Wrap(err, "wav: missing extended format chunk body")
-						}
-					}
+					d.h.NumChans = fmtchunk.NumChans
+					d.h.SampleRate = fmtchunk.SampleRate
+					d.h.ByteRate = fmtchunk.ByteRate
+					d.h.BytesPerFrame = fmtchunk.BytesPerFrame
+					d.h.BitsPerSample = fmtchunk.BitsPerSample
 				}
 
+				// SubFormat is represented by GUID. Plain PCM is KSDATAFORMAT_SUBTYPE_PCM GUID.
+				// See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ksmedia/ns-ksmedia-waveformatextensible
+				pcmguid := guid{
+					0x00000001, 0x0000, 0x0010,
+					[8]byte{0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71},
+				}
+				if fmtchunk.SubFormat != pcmguid {
+					return nil, beep.Format{}, errors.New(
+						fmt.Sprintf(
+							"wav: unsupported sub format type - %08x-%04x-%04x-%s",
+							fmtchunk.SubFormat.Data1, fmtchunk.SubFormat.Data2, fmtchunk.SubFormat.Data3,
+							hex.EncodeToString(fmtchunk.SubFormat.Data4[:]),
+						),
+					)
+				}
+			} else {
+				// WAVEFORMAT or WAVEFORMATEX
+				fmtchunk := formatchunk{0, 0, 0, 0, 0}
+				if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
+					return nil, beep.Format{}, errors.New("wav: missing format chunk body")
+				} else {
+					d.h.NumChans = fmtchunk.NumChans
+					d.h.SampleRate = fmtchunk.SampleRate
+					d.h.ByteRate = fmtchunk.ByteRate
+					d.h.BytesPerFrame = fmtchunk.BytesPerFrame
+					d.h.BitsPerSample = fmtchunk.BitsPerSample
+				}
+				// it would be skipping cbSize (WAVEFORMATEX's last member).
+				if d.h.FormatSize > 16 {
+					trash := make([]byte, d.h.FormatSize-16)
+					if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
+						return nil, beep.Format{}, errors.Wrap(err, "wav: missing extended format chunk body")
+					}
+				}
 			}
-
 		case string(ft[:]) == "data":
-			{
-				d.h.DataMark = ft
-				if err := binary.Read(rc, binary.LittleEndian, &d.h.DataSize); err != nil {
-					return nil, beep.Format{}, errors.Wrap(err, "wav: missing data chunk size")
-				}
+			d.h.DataMark = ft
+			if err := binary.Read(rc, binary.LittleEndian, &d.h.DataSize); err != nil {
+				return nil, beep.Format{}, errors.Wrap(err, "wav: missing data chunk size")
 			}
-
 		default:
-			{
-				if err := binary.Read(rc, binary.LittleEndian, &fs); err != nil {
-					return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk size")
-				}
-				trash := make([]byte, fs)
-				if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
-					return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk body")
-				}
+			if err := binary.Read(rc, binary.LittleEndian, &fs); err != nil {
+				return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk size")
+			}
+			trash := make([]byte, fs)
+			if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
+				return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk body")
 			}
 		}
 	}
@@ -193,19 +175,15 @@ type formatchunkextensible struct {
 type header struct {
 	RiffMark [4]byte
 	FileSize int32
-
 	WaveMark [4]byte
-
 	FmtMark    [4]byte
 	FormatSize int32
 	FormatType int16
-
 	NumChans      int16
 	SampleRate    int32
 	ByteRate      int32
 	BytesPerFrame int16
 	BitsPerSample int16
-
 	DataMark [4]byte
 	DataSize int32
 }
