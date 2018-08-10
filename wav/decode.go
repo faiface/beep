@@ -94,7 +94,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 					if fmtchunk.SubFormat != pcmguid {
 						return nil, beep.Format{}, errors.New(
 							fmt.Sprintf(
-								"wav: unsupported sub format type - %04x-%02x-%02x-%s",
+								"wav: unsupported sub format type - %08x-%04x-%04x-%s",
 								fmtchunk.SubFormat.Data1, fmtchunk.SubFormat.Data2, fmtchunk.SubFormat.Data3,
 								hex.EncodeToString(fmtchunk.SubFormat.Data4[:]),
 							),
