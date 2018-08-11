@@ -46,6 +46,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	// check each formtypes
 	ft := [4]byte{0, 0, 0, 0}
 	var fs int32 = 0
+	d.hsz = 4 + 4 + 4 // add size of (RiffMark + FileSize + WaveMark)
 	for string(ft[:]) != "data" {
 		if err = binary.Read(rc, binary.LittleEndian, ft[:]); err != nil {
 			return nil, beep.Format{}, errors.Wrap(err, "wav: missing chunk type")
@@ -56,6 +57,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 			if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatSize); err != nil {
 				return nil, beep.Format{}, errors.New("wav: missing format chunk size")
 			}
+			d.hsz += 4 + 4 + d.h.FormatSize // add size of (FmtMark + FormatSize + its trailing size)
 			if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatType); err != nil {
 				return nil, beep.Format{}, errors.New("wav: missing format type")
 			}
@@ -115,6 +117,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 			if err := binary.Read(rc, binary.LittleEndian, &d.h.DataSize); err != nil {
 				return nil, beep.Format{}, errors.Wrap(err, "wav: missing data chunk size")
 			}
+			d.hsz += 4 + 4 //add size of (DataMark + DataSize)
 		default:
 			if err := binary.Read(rc, binary.LittleEndian, &fs); err != nil {
 				return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk size")
@@ -123,6 +126,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 			if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
 				return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk body")
 			}
+			d.hsz += 4 + fs //add size of (Unknown formtype + formsize)
 		}
 	}
 
@@ -173,24 +177,25 @@ type formatchunkextensible struct {
 }
 
 type header struct {
-	RiffMark [4]byte
-	FileSize int32
-	WaveMark [4]byte
-	FmtMark    [4]byte
-	FormatSize int32
-	FormatType int16
+	RiffMark      [4]byte
+	FileSize      int32
+	WaveMark      [4]byte
+	FmtMark       [4]byte
+	FormatSize    int32
+	FormatType    int16
 	NumChans      int16
 	SampleRate    int32
 	ByteRate      int32
 	BytesPerFrame int16
 	BitsPerSample int16
-	DataMark [4]byte
-	DataSize int32
+	DataMark      [4]byte
+	DataSize      int32
 }
 
 type decoder struct {
 	rc  io.ReadCloser
 	h   header
+	hsz int32
 	pos int32
 	err error
 }
@@ -260,7 +265,7 @@ func (d *decoder) Seek(p int) error {
 		return fmt.Errorf("wav: seek position %v out of range [%v, %v]", p, 0, d.Len())
 	}
 	pos := int32(p) * int32(d.h.BytesPerFrame)
-	_, err := seeker.Seek(int64(pos)+44, io.SeekStart) // 44 is the size of the header
+	_, err := seeker.Seek(int64(pos+d.hsz), io.SeekStart) // hsz is the size of the header
 	if err != nil {
 		return errors.Wrap(err, "wav: seek error")
 	}
