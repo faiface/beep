@@ -85,36 +85,38 @@ func (d *decoder) refill() error {
 	// Decode audio samples.
 	bps := d.stream.Info.BitsPerSample
 	nchannels := d.stream.Info.NChannels
+	s := 1 << (bps - 1)
+	q := 1 / float64(s)
 	switch {
 	case bps == 8 && nchannels == 1:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int8(frame.Subframes[0].Samples[i])) / (1<<7 - 1)
-			d.buf[i][1] = float64(int8(frame.Subframes[0].Samples[i])) / (1<<7 - 1)
+			d.buf[i][0] = float64(int8(frame.Subframes[0].Samples[i])) * q
+			d.buf[i][1] = float64(int8(frame.Subframes[0].Samples[i])) * q
 		}
 	case bps == 16 && nchannels == 1:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int16(frame.Subframes[0].Samples[i])) / (1<<15 - 1)
-			d.buf[i][1] = float64(int16(frame.Subframes[0].Samples[i])) / (1<<15 - 1)
+			d.buf[i][0] = float64(int16(frame.Subframes[0].Samples[i])) * q
+			d.buf[i][1] = float64(int16(frame.Subframes[0].Samples[i])) * q
 		}
 	case bps == 24 && nchannels == 1:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int32(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
-			d.buf[i][1] = float64(int32(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
+			d.buf[i][0] = float64(int32(frame.Subframes[0].Samples[i])) * q
+			d.buf[i][1] = float64(int32(frame.Subframes[0].Samples[i])) * q
 		}
 	case bps == 8 && nchannels >= 2:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int8(frame.Subframes[0].Samples[i])) / (1<<7 - 1)
-			d.buf[i][1] = float64(int8(frame.Subframes[1].Samples[i])) / (1<<7 - 1)
+			d.buf[i][0] = float64(int8(frame.Subframes[0].Samples[i])) * q
+			d.buf[i][1] = float64(int8(frame.Subframes[1].Samples[i])) * q
 		}
 	case bps == 16 && nchannels >= 2:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int16(frame.Subframes[0].Samples[i])) / (1<<15 - 1)
-			d.buf[i][1] = float64(int16(frame.Subframes[1].Samples[i])) / (1<<15 - 1)
+			d.buf[i][0] = float64(int16(frame.Subframes[0].Samples[i])) * q
+			d.buf[i][1] = float64(int16(frame.Subframes[1].Samples[i])) * q
 		}
 	case bps == 24 && nchannels >= 2:
 		for i := 0; i < n; i++ {
-			d.buf[i][0] = float64(int32(frame.Subframes[0].Samples[i])) / (1<<23 - 1)
-			d.buf[i][1] = float64(int32(frame.Subframes[1].Samples[i])) / (1<<23 - 1)
+			d.buf[i][0] = float64(frame.Subframes[0].Samples[i]) * q
+			d.buf[i][1] = float64(frame.Subframes[1].Samples[i]) * q
 		}
 	default:
 		panic(fmt.Errorf("support for %d bits-per-sample and %d channels combination not yet implemented", bps, nchannels))
