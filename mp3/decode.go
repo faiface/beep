@@ -90,6 +90,7 @@ func (d *decoder) Seek(p int) error {
 	if err != nil {
 		return errors.Wrap(err, "mp3")
 	}
+	d.pos = int64(p) * gomp3BytesPerFrame
 	return nil
 }
 
