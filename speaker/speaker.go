@@ -80,6 +80,13 @@ func Play(s ...beep.Streamer) {
 	mu.Unlock()
 }
 
+// Clear removes all currently playing Streamers from the speaker.
+func Clear() {
+	mu.Lock()
+	mixer.Clear()
+	mu.Unlock()
+}
+
 // update pulls new data from the playing Streamers and sends it to the speaker. Blocks until the
 // data is sent and started playing.
 func update() {
