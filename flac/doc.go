@@ -1,4 +1,4 @@
 // Package flac implements audio data decoding in FLAC format.
 //
-// Note: Len, Position and Seek methods are still unimplemented.
+// Note: Seek method is still unimplemented.
 package flac
