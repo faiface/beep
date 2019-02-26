@@ -4,12 +4,17 @@ import "github.com/faiface/beep"
 
 // Mono converts the wrapped Streamer to a mono buffer
 // by downmixing the left and right channels together.
-type Mono struct {
+//
+// The returned Streamer propagates s's errors throught Err.
+func Mono(s beep.Streamer) beep.Streamer {
+	return &mono{s}
+}
+
+type mono struct {
 	Streamer beep.Streamer
 }
 
-// Stream streams the wrapped Streamer while converting the channels into mono.
-func (m *Mono) Stream(samples [][2]float64) (n int, ok bool) {
+func (m *mono) Stream(samples [][2]float64) (n int, ok bool) {
 	n, ok = m.Streamer.Stream(samples)
 	for i := range samples[:n] {
 		mix := (samples[i][0] + samples[i][1]) / 2
@@ -18,7 +23,6 @@ func (m *Mono) Stream(samples [][2]float64) (n int, ok bool) {
 	return n, ok
 }
 
-// Err propagates the wrapped Streamer's errors.
-func (m *Mono) Err() error {
+func (m *mono) Err() error {
 	return m.Streamer.Err()
 }
