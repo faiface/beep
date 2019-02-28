@@ -11,8 +11,8 @@ func (m *Mixer) Len() int {
 	return len(m.streamers)
 }
 
-// Play adds Streamers to the Mixer.
-func (m *Mixer) Play(s ...Streamer) {
+// Add adds Streamers to the Mixer.
+func (m *Mixer) Add(s ...Streamer) {
 	m.streamers = append(m.streamers, s...)
 }
 

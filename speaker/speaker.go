@@ -79,7 +79,7 @@ func Unlock() {
 // Play starts playing all provided Streamers through the speaker.
 func Play(s ...beep.Streamer) {
 	mu.Lock()
-	mixer.Play(s...)
+	mixer.Add(s...)
 	mu.Unlock()
 }
 
