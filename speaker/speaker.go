@@ -14,6 +14,7 @@ var (
 	mixer   beep.Mixer
 	samples [][2]float64
 	buf     []byte
+	context *oto.Context
 	player  *oto.Player
 	done    chan struct{}
 )
@@ -30,6 +31,7 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	if player != nil {
 		done <- struct{}{}
 		player.Close()
+		context.Close()
 	}
 
 	mixer = beep.Mixer{}
@@ -39,10 +41,11 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	buf = make([]byte, numBytes)
 
 	var err error
-	player, err = oto.NewPlayer(int(sampleRate), 2, 2, numBytes)
+	context, err = oto.NewContext(int(sampleRate), 2, 2, numBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize speaker")
 	}
+	player = context.NewPlayer()
 
 	done = make(chan struct{})
 
