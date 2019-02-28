@@ -141,6 +141,11 @@ func (r *Resampler) Err() error {
 	return r.s.Err()
 }
 
+// Ratio returns the current resampling ratio.
+func (r *Resampler) Ratio() float64 {
+	return r.ratio
+}
+
 // SetRatio sets the resampling ratio. This does not cause any glitches in the stream.
 func (r *Resampler) SetRatio(ratio float64) {
 	r.pos = int(float64(r.pos) * r.ratio / ratio)
