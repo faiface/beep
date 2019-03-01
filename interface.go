@@ -28,7 +28,7 @@ type Streamer interface {
 	//
 	//   3. n == 0 && !ok
 	//
-	// The Streamer is drained and no more samples will come. If Err return a non-nil error, only
+	// The Streamer is drained and no more samples will come. If Err returns a non-nil error, only
 	// this case is valid. Only this case may occur in the following calls.
 	Stream(samples [][2]float64) (n int, ok bool)
 
