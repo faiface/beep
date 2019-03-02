@@ -111,25 +111,25 @@ func (ap *audioPanel) handle(event tcell.Event) (changed, quit bool) {
 			speaker.Unlock()
 			return true, false
 
-		case 'a':
+		case 'a', 'A':
 			speaker.Lock()
 			ap.volume.Volume -= 0.1
 			speaker.Unlock()
 			return true, false
 
-		case 's':
+		case 's', 'S':
 			speaker.Lock()
 			ap.volume.Volume += 0.1
 			speaker.Unlock()
 			return true, false
 
-		case 'z':
+		case 'z', 'Z':
 			speaker.Lock()
 			ap.resampler.SetRatio(ap.resampler.Ratio() * 15 / 16)
 			speaker.Unlock()
 			return true, false
 
-		case 'x':
+		case 'x', 'X':
 			speaker.Lock()
 			ap.resampler.SetRatio(ap.resampler.Ratio() * 16 / 15)
 			speaker.Unlock()
