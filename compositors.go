@@ -2,7 +2,7 @@ package beep
 
 // Take returns a Streamer which streams at most num samples from s.
 //
-// The returned Streamer propagates s's errors throught Err.
+// The returned Streamer propagates s's errors through Err.
 func Take(num int, s Streamer) Streamer {
 	return &take{
 		s:       s,
@@ -94,7 +94,7 @@ func Seq(s ...Streamer) Streamer {
 	})
 }
 
-// Mix takes zero or more Streamers and returns a Streamer which streames them mixed together.
+// Mix takes zero or more Streamers and returns a Streamer which streams them mixed together.
 //
 // Mix does not propagate errors from the Streamers.
 func Mix(s ...Streamer) Streamer {

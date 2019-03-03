@@ -4,7 +4,7 @@ import "github.com/faiface/beep"
 
 // Swap swaps the left and right channel of the wrapped Streamer.
 //
-// The returned Streamer propagates s's errors throught Err.
+// The returned Streamer propagates s's errors through Err.
 func Swap(s beep.Streamer) beep.Streamer {
 	return &swap{s}
 }

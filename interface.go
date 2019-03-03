@@ -32,7 +32,7 @@ type Streamer interface {
 	// this case is valid. Only this case may occur in the following calls.
 	Stream(samples [][2]float64) (n int, ok bool)
 
-	// Err returns an error which occured during streaming. If no error occured, nil is
+	// Err returns an error which occurred during streaming. If no error occurred, nil is
 	// returned.
 	//
 	// When an error occurs, Streamer must become drained and Stream must return 0, false

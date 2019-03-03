@@ -18,7 +18,7 @@ import (
 // StreamSeekCloser when you want to release the resources.
 func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
 	d := decoder{rc: rc}
-	defer func() { // hacky way to always close rsc if an error occured
+	defer func() { // hacky way to always close rsc if an error occurred
 		if err != nil {
 			d.rc.Close()
 		}
@@ -29,7 +29,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 		return nil, beep.Format{}, errors.Wrap(err, "wav")
 	}
 	if string(d.h.RiffMark[:]) != "RIFF" {
-		return nil, beep.Format{}, errors.New(fmt.Sprintf("wav: missing RIFF at the beginning > %s", string(d.h.RiffMark[:])))
+		return nil, beep.Format{}, fmt.Errorf("wav: missing RIFF at the beginning > %s", string(d.h.RiffMark[:]))
 	}
 
 	// READ Total file size
@@ -45,7 +45,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 
 	// check each formtypes
 	ft := [4]byte{0, 0, 0, 0}
-	var fs int32 = 0
+	var fs int32
 	d.hsz = 4 + 4 + 4 // add size of (RiffMark + FileSize + WaveMark)
 	for string(ft[:]) != "data" {
 		if err = binary.Read(rc, binary.LittleEndian, ft[:]); err != nil {
@@ -69,13 +69,12 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 				}
 				if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
 					return nil, beep.Format{}, errors.New("wav: missing format chunk body")
-				} else {
-					d.h.NumChans = fmtchunk.NumChans
-					d.h.SampleRate = fmtchunk.SampleRate
-					d.h.ByteRate = fmtchunk.ByteRate
-					d.h.BytesPerFrame = fmtchunk.BytesPerFrame
-					d.h.BitsPerSample = fmtchunk.BitsPerSample
 				}
+				d.h.NumChans = fmtchunk.NumChans
+				d.h.SampleRate = fmtchunk.SampleRate
+				d.h.ByteRate = fmtchunk.ByteRate
+				d.h.BytesPerFrame = fmtchunk.BytesPerFrame
+				d.h.BitsPerSample = fmtchunk.BitsPerSample
 
 				// SubFormat is represented by GUID. Plain PCM is KSDATAFORMAT_SUBTYPE_PCM GUID.
 				// See https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/ksmedia/ns-ksmedia-waveformatextensible
@@ -84,12 +83,10 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 					[8]byte{0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71},
 				}
 				if fmtchunk.SubFormat != pcmguid {
-					return nil, beep.Format{}, errors.New(
-						fmt.Sprintf(
-							"wav: unsupported sub format type - %08x-%04x-%04x-%s",
-							fmtchunk.SubFormat.Data1, fmtchunk.SubFormat.Data2, fmtchunk.SubFormat.Data3,
-							hex.EncodeToString(fmtchunk.SubFormat.Data4[:]),
-						),
+					return nil, beep.Format{}, fmt.Errorf(
+						"wav: unsupported sub format type - %08x-%04x-%04x-%s",
+						fmtchunk.SubFormat.Data1, fmtchunk.SubFormat.Data2, fmtchunk.SubFormat.Data3,
+						hex.EncodeToString(fmtchunk.SubFormat.Data4[:]),
 					)
 				}
 			} else {
@@ -97,13 +94,13 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 				fmtchunk := formatchunk{0, 0, 0, 0, 0}
 				if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
 					return nil, beep.Format{}, errors.New("wav: missing format chunk body")
-				} else {
-					d.h.NumChans = fmtchunk.NumChans
-					d.h.SampleRate = fmtchunk.SampleRate
-					d.h.ByteRate = fmtchunk.ByteRate
-					d.h.BytesPerFrame = fmtchunk.BytesPerFrame
-					d.h.BitsPerSample = fmtchunk.BitsPerSample
 				}
+				d.h.NumChans = fmtchunk.NumChans
+				d.h.SampleRate = fmtchunk.SampleRate
+				d.h.ByteRate = fmtchunk.ByteRate
+				d.h.BytesPerFrame = fmtchunk.BytesPerFrame
+				d.h.BitsPerSample = fmtchunk.BitsPerSample
+
 				// it would be skipping cbSize (WAVEFORMATEX's last member).
 				if d.h.FormatSize > 16 {
 					trash := make([]byte, d.h.FormatSize-16)
@@ -137,7 +134,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 		return nil, beep.Format{}, errors.New("wav: missing data chunk marker")
 	}
 	if d.h.FormatType != 1 && d.h.FormatType != -2 {
-		return nil, beep.Format{}, errors.New(fmt.Sprintf("wav: unsupported format type - %d", d.h.FormatType))
+		return nil, beep.Format{}, fmt.Errorf("wav: unsupported format type - %d", d.h.FormatType)
 	}
 	if d.h.NumChans <= 0 {
 		return nil, beep.Format{}, errors.New("wav: invalid number of channels (less than 1)")

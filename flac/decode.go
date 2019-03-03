@@ -16,7 +16,7 @@ import (
 // StreamSeekCloser when you want to release the resources.
 func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
 	d := decoder{rc: rc}
-	defer func() { // hacky way to always close rc if an error occured
+	defer func() { // hacky way to always close rc if an error occurred
 		if err != nil {
 			d.rc.Close()
 		}

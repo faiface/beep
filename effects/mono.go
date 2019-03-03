@@ -5,7 +5,7 @@ import "github.com/faiface/beep"
 // Mono converts the wrapped Streamer to a mono buffer
 // by downmixing the left and right channels together.
 //
-// The returned Streamer propagates s's errors throught Err.
+// The returned Streamer propagates s's errors through Err.
 func Mono(s beep.Streamer) beep.Streamer {
 	return &mono{s}
 }
