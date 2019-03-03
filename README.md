@@ -8,7 +8,7 @@ go get -u github.com/faiface/beep
 
 ## Features
 
-Beep is built on top of its [Streamer](https://godoc.org/github.com/faiface/beep#Streamer), which is like [io.Reader](https://golang.org/pkg/io/#Reader), but for audio. It was one of the best design decisions I've ever made and it enabled all the rest of the features to naturally come together with not too many lines of code.
+Beep is built on top of its [Streamer](https://godoc.org/github.com/faiface/beep#Streamer) interface, which is like [io.Reader](https://golang.org/pkg/io/#Reader), but for audio. It was one of the best design decisions I've ever made and it enabled all the rest of the features to naturally come together with not too many lines of code.
 
 - **Decode and play WAV, MP3, OGG, and FLAC.**
 - **Encode and save WAV.**
