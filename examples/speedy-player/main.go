@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"unicode"
 
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/effects"
@@ -80,23 +81,25 @@ func (ap *audioPanel) handle(event tcell.Event) (changed, quit bool) {
 		if event.Key() == tcell.KeyESC {
 			return false, true
 		}
+
 		if event.Key() != tcell.KeyRune {
 			return false, false
 		}
-		switch event.Rune() {
+
+		switch unicode.ToLower(event.Rune()) {
 		case ' ':
 			speaker.Lock()
 			ap.ctrl.Paused = !ap.ctrl.Paused
 			speaker.Unlock()
 			return false, false
 
-		case 'q', 'Q', 'w', 'W':
+		case 'q', 'w':
 			speaker.Lock()
 			newPos := ap.streamer.Position()
-			if event.Rune() == 'q' || event.Rune() == 'Q' {
+			if event.Rune() == 'q' {
 				newPos -= ap.sampleRate.N(time.Second)
 			}
-			if event.Rune() == 'w' || event.Rune() == 'W' {
+			if event.Rune() == 'w' {
 				newPos += ap.sampleRate.N(time.Second)
 			}
 			if newPos < 0 {
@@ -111,25 +114,25 @@ func (ap *audioPanel) handle(event tcell.Event) (changed, quit bool) {
 			speaker.Unlock()
 			return true, false
 
-		case 'a', 'A':
+		case 'a':
 			speaker.Lock()
 			ap.volume.Volume -= 0.1
 			speaker.Unlock()
 			return true, false
 
-		case 's', 'S':
+		case 's':
 			speaker.Lock()
 			ap.volume.Volume += 0.1
 			speaker.Unlock()
 			return true, false
 
-		case 'z', 'Z':
+		case 'z':
 			speaker.Lock()
 			ap.resampler.SetRatio(ap.resampler.Ratio() * 15 / 16)
 			speaker.Unlock()
 			return true, false
 
-		case 'x', 'X':
+		case 'x':
 			speaker.Lock()
 			ap.resampler.SetRatio(ap.resampler.Ratio() * 16 / 15)
 			speaker.Unlock()
