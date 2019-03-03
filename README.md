@@ -1,81 +1,42 @@
-# Beep
+# Beep [![GoDoc](https://godoc.org/github.com/faiface/beep?status.svg)](https://godoc.org/github.com/faiface/beep) [![Go Report Card](https://goreportcard.com/badge/github.com/faiface/beep)](https://goreportcard.com/report/github.com/faiface/beep)
 
-A small package that brings sound to any Go program (and real-time audio processing and other casual stuff)
+A little package that brings sound to any Go application. Suitable for playback and audio-processing.
 
 ```
-$ go get github.com/faiface/beep
+go get -u github.com/faiface/beep
 ```
 
-## A (very short) Tour of Beep
+## Features
 
-Let's get started! Open an audio file (let's ignore errors for now, never do that in production).
+Beep is built on top of its [Streamer](https://godoc.org/github.com/faiface/beep#Streamer), which is like [io.Reader](https://golang.org/pkg/io/#Reader), but for audio. It was one of the best design decisions I've ever made and it enabled all the rest of the features to naturally come together with not too many lines of code.
 
-```go
-f, _ := os.Open("song.wav")
-```
+- **Decode and play WAV, MP3, OGG, and FLAC.**
+- **Encode and save WAV.**
+- **Very simple API.** Limiting the support to stereo (two channel) audio made it possible to simplify the architecture and the API.
+- **Rich library of compositors and effects.** Loop, pause/resume, change volume, mix, sequence, change the playback speed, and more.
+- **Easily create new effects.** With the `Streamer` interface, creating new effects is very easy.
+- **Generate completely own artificial sounds.** Again, the `Streamer` interface enables easy sound generation.
+- **Very small codebase.** The core is just ~1K LOC. All the decoders and encoders add up to another ~1K LOC.
 
-Decode the file into a [Streamer](https://godoc.org/github.com/faiface/beep#Streamer).
+## Tutorial
 
-```go
-// import "github.com/faiface/beep/wav"
-s, format, _ := wav.Decode(f)
-```
+The [Wiki](https://github.com/faiface/beep/wiki) contains a handful of tutorials for you to get started. They teach the fundamentals and advanced topics alike.
 
-Streamers are super important in Beep. Streamer is anything that can Stream audio (lazily) and
-perhaps do other interesting things along the way. The streamer returned from `wav.Decode` streams
-audio from the file.
+- [Hello, Beep!](https://github.com/faiface/beep/wiki/Hello,-Beep!)
+- [Composing and controlling](https://github.com/faiface/beep/wiki/Composing-and-controlling)
+- [To buffer, or not to buffer, that is the question](https://github.com/faiface/beep/wiki/To-buffer,-or-not-to-buffer,-that-is-the-question)
+- [Making own streamers](https://github.com/faiface/beep/wiki/Making-own-streamers)
 
-Now, let's play the streamer. First, we need to initialize the speaker.
+## Examples
 
-```go
-// import "github.com/faiface/beep/speaker"
-speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-```
+TODO
 
-We set the sample rate of the speaker to the sample rate of the file and we set the buffer size to
-1/10s. Buffer size determines the stability and responsiveness of the playback. With smaller buffer,
-you get more responsiveness and less latency. With bigger buffer, you get more stability and
-reliability.
+## Dependencies
 
-Finally, let's play!
+For playback, Beep uses [Oto](https://github.com/hajimehoshi/oto) under the hood. Check its requirements to see what you need to install for building your application.
 
-```go
-speaker.Play(s)
-```
+Running an already built application should work with no extra dependencies.
 
-The streamer now starts playing, but in order to hear anything, we need to prevent our program from
-exiting.
+## Licence
 
-```go
-select {} // for now
-```
-
-Now, this is kind of a hack. Let's fix it. To do that, we'll use `beep.Seq` function, which takes
-some streamers and streams them one by one and we'll use `beep.Callback` function, which creates a
-streamer, that does not stream any audio, but instead calls our own function. So, here's what we do.
-First, we create a channel, which will signal the end of the playback.
-
-```go
-done := make(chan struct{})
-```
-
-Now, we'll change `speaker.Play(s)` into this.
-
-```go
-speaker.Play(beep.Seq(s, beep.Callback(func() {
-        close(done)
-})))
-```
-
-And finally, we'll replace the hacky `select {}` with a receive from the channel.
-
-```go
-<-done
-```
-
-And that's it!
-
-For more in-depth journey into the design of Beep, take a look at [my blog post](https://faiface.github.io/post/how-i-built-audio-lib-composite-pattern/).
-
-Take a look at the [documentation](https://godoc.org/github.com/faiface/beep) for other interesting
-things you can do with Beep, such as mixing, looping, audio effects, and other useful stuff.
+[MIT](https://github.com/faiface/beep/blob/master/LICENSE)
