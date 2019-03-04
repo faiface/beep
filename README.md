@@ -29,7 +29,9 @@ The [Wiki](https://github.com/faiface/beep/wiki) contains a handful of tutorials
 
 ## Examples
 
-TODO
+| [Speedy Player](https://github.com/faiface/beep/tree/master/examples/speedy-player) | [Doppler Stereo Room](https://github.com/faiface/beep/tree/master/examples/doppler-stereo-room) |
+| --- | --- |
+| ![Speedy Player](https://github.com/faiface/beep/blob/master/examples/speedy-player/screenshot.png) | ![Doppler Stereo Room](https://github.com/faiface/beep/blob/master/examples/doppler-stereo-room/screenshot.png) |
 
 ## Dependencies
 
