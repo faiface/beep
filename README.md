@@ -16,7 +16,7 @@ Beep is built on top of its [Streamer](https://godoc.org/github.com/faiface/beep
 - **Rich library of compositors and effects.** Loop, pause/resume, change volume, mix, sequence, change playback speed, and more.
 - **Easily create new effects.** With the `Streamer` interface, creating new effects is very easy.
 - **Generate completely own artificial sounds.** Again, the `Streamer` interface enables easy sound generation.
-- **Very small codebase.** The core is just ~1K LOC. All the decoders and encoders add up to another ~1K LOC.
+- **Very small codebase.** The core is just ~1K LOC.
 
 ## Tutorial
 
