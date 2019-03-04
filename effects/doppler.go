@@ -17,7 +17,7 @@ import "github.com/faiface/beep"
 //   distance:        a function to calculate the current distance; takes number of
 //                    samples Doppler wants to stream at the moment
 //
-// This API is experimental and may change any time!
+// This function is experimental and may change any time!
 func Doppler(quality int, samplesPerMeter float64, s beep.Streamer, distance func(delta int) float64) beep.Streamer {
 	return &doppler{
 		r:               beep.ResampleRatio(quality, 1, s),
