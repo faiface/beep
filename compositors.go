@@ -54,15 +54,15 @@ func (l *loop) Stream(samples [][2]float64) (n int, ok bool) {
 	for len(samples) > 0 {
 		sn, sok := l.s.Stream(samples)
 		if !sok {
+			if l.remains > 0 {
+				l.remains--
+			}
 			if l.remains == 0 {
 				break
 			}
 			err := l.s.Seek(0)
 			if err != nil {
 				return n, true
-			}
-			if l.remains > 0 {
-				l.remains--
 			}
 			continue
 		}

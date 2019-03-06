@@ -8,22 +8,46 @@ import (
 	"github.com/faiface/beep"
 )
 
-// randomDataStreamer generates random samples of duration d and returns a Streamer which streams
+// randomDataStreamer generates random samples of duration d and returns a StreamSeeker which streams
 // them and the data itself.
-func randomDataStreamer(numSamples int) (s beep.Streamer, data [][2]float64) {
+func randomDataStreamer(numSamples int) (s beep.StreamSeeker, data [][2]float64) {
 	data = make([][2]float64, numSamples)
 	for i := range data {
 		data[i][0] = rand.Float64()*2 - 1
 		data[i][1] = rand.Float64()*2 - 1
 	}
-	return beep.StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
-		if len(data) == 0 {
-			return 0, false
-		}
-		n = copy(samples, data)
-		data = data[n:]
-		return n, true
-	}), data
+	return &dataStreamer{data, 0}, data
+}
+
+type dataStreamer struct {
+	data [][2]float64
+	pos  int
+}
+
+func (ds *dataStreamer) Stream(samples [][2]float64) (n int, ok bool) {
+	if ds.pos >= len(ds.data) {
+		return 0, false
+	}
+	n = copy(samples, ds.data[ds.pos:])
+	ds.pos += n
+	return n, true
+}
+
+func (ds *dataStreamer) Err() error {
+	return nil
+}
+
+func (ds *dataStreamer) Len() int {
+	return len(ds.data)
+}
+
+func (ds *dataStreamer) Position() int {
+	return ds.pos
+}
+
+func (ds *dataStreamer) Seek(p int) error {
+	ds.pos = p
+	return nil
 }
 
 // collect drains Streamer s and returns all of the samples it streamed.
@@ -52,6 +76,24 @@ func TestTake(t *testing.T) {
 
 		if !reflect.DeepEqual(want, got) {
 			t.Error("Take not working correctly")
+		}
+	}
+}
+
+func TestLoop(t *testing.T) {
+	for i := 0; i < 7; i++ {
+		for n := 0; n < 5; n++ {
+			s, data := randomDataStreamer(10)
+
+			var want [][2]float64
+			for j := 0; j < n; j++ {
+				want = append(want, data...)
+			}
+			got := collect(beep.Loop(n, s))
+
+			if !reflect.DeepEqual(want, got) {
+				t.Error("Loop not working correctly")
+			}
 		}
 	}
 }
