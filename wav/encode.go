@@ -23,8 +23,8 @@ func Encode(w io.WriteSeeker, s beep.Streamer, format beep.Format) (err error) {
 	if format.NumChannels <= 0 {
 		return errors.New("wav: invalid number of channels (less than 1)")
 	}
-	if format.Precision != 1 && format.Precision != 2 {
-		return errors.New("wav: unsupported precision, 1 or 2 is supported")
+	if format.Precision != 1 && format.Precision != 2 && format.Precision != 3 {
+		return errors.New("wav: unsupported precision, 1, 2 or 3 is supported")
 	}
 
 	h := header{
@@ -63,7 +63,7 @@ func Encode(w io.WriteSeeker, s beep.Streamer, format beep.Format) (err error) {
 			for _, sample := range samples[:n] {
 				buf = buf[format.EncodeUnsigned(buf, sample):]
 			}
-		case format.Precision == 2:
+		case format.Precision == 2 || format.Precision == 3:
 			for _, sample := range samples[:n] {
 				buf = buf[format.EncodeSigned(buf, sample):]
 			}
