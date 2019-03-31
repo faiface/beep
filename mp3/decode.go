@@ -36,14 +36,15 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 		NumChannels: gomp3NumChannels,
 		Precision:   gomp3Precision,
 	}
-	return &decoder{d, format, 0, nil}, format, nil
+	return &decoder{rc, d, format, 0, nil}, format, nil
 }
 
 type decoder struct {
-	d   *gomp3.Decoder
-	f   beep.Format
-	pos int
-	err error
+	closer io.Closer
+	d      *gomp3.Decoder
+	f      beep.Format
+	pos    int
+	err    error
 }
 
 func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
@@ -95,7 +96,7 @@ func (d *decoder) Seek(p int) error {
 }
 
 func (d *decoder) Close() error {
-	err := d.d.Close()
+	err := d.closer.Close()
 	if err != nil {
 		return errors.Wrap(err, "mp3")
 	}
