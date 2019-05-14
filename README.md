@@ -20,7 +20,7 @@ Beep is built on top of its [Streamer](https://godoc.org/github.com/faiface/beep
 
 ## Tutorial
 
-The [Wiki](https://github.com/faiface/beep/wiki) contains a handful of tutorials for you to get started. They teach the fundamentals and advanced topics alike. **Read them especially if you call `beep.Init` every time you play something.**
+The [Wiki](https://github.com/faiface/beep/wiki) contains a handful of tutorials for you to get started. They teach the fundamentals and advanced topics alike. **Read them especially if you call `speaker.Init` every time you play something.**
 
 - [Hello, Beep!](https://github.com/faiface/beep/wiki/Hello,-Beep!)
 - [Composing and controlling](https://github.com/faiface/beep/wiki/Composing-and-controlling)
