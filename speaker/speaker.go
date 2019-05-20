@@ -65,12 +65,10 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 // but hardware device that you'll probably want to manually manage the device from your application.
 func Close() {
 	if player != nil {
-		if done != nil {
-			done <- struct{}{}
-			done = nil
-		}
+		done <- struct{}{}
 		player.Close()
 		context.Close()
+		player = nil
 	}
 }
 
