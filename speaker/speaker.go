@@ -28,11 +28,7 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if player != nil {
-		done <- struct{}{}
-		player.Close()
-		context.Close()
-	}
+	Close()
 
 	mixer = beep.Mixer{}
 
@@ -61,6 +57,22 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	}()
 
 	return nil
+}
+
+// Close closes the playback and the driver. In most cases, there is certainly no need to call Close
+// even when the program doesn't play anymore, because in properly set systems, the default mixer
+// handles multiple concurrent processes. It's only when the default device is not a virtual but hardware
+// device, that you'll probably want to manually manage the device from your application.
+func Close() {
+	if player != nil {
+		if done != nil {
+			done <- struct{}{}
+			done = nil
+		}
+		player.Close()
+		context.Close()
+		player = nil
+	}
 }
 
 // Lock locks the speaker. While locked, speaker won't pull new data from the playing Stramers. Lock
