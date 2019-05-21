@@ -59,10 +59,10 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	return nil
 }
 
-// Close closes playback and driver. In most cases, there is certainly no need to call Close
-// even when program doesn't play anymore and it won't exist, because in properly set systems,
-// the default mixer handles multiple processes. It's only when the default device is not virtual
-// but hardware device that you'll probably want to manually manage the device from your application.
+// Close closes the playback and the driver. In most cases, there is certainly no need to call Close
+// even when the program doesn't play anymore, because in properly set systems, the default mixer
+// handles multiple concurrent processes. It's only when the default device is not a virtual but hardware
+// device, that you'll probably want to manually manage the device from your application.
 func Close() {
 	if player != nil {
 		if done != nil {
