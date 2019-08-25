@@ -186,7 +186,7 @@ func (b *Buffer) Len() int {
 //
 // Existing Streamers are not affected.
 func (b *Buffer) Pop(n int) {
-	b.data = b.data[n:]
+	b.data = b.data[n*b.f.Width():]
 }
 
 // Append adds all audio data from the given Streamer to the end of the Buffer.
