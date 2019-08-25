@@ -59,3 +59,29 @@ func TestFormatEncodeDecode(t *testing.T) {
 		}
 	}
 }
+
+func TestBufferAppendPop(t *testing.T) {
+	formats := make(chan beep.Format)
+	go func() {
+		defer close(formats)
+		for _, numChannels := range []int{1, 2, 3, 4} {
+			formats <- beep.Format{
+				SampleRate:  44100,
+				NumChannels: numChannels,
+				Precision:   2,
+			}
+		}
+	}()
+
+	for format := range formats {
+		b := beep.NewBuffer(format)
+		b.Append(beep.Silence(768))
+		if b.Len() != 768 {
+			t.Fatalf("buffer length isn't equal to appended stream length: expected: %v, actual: %v (NumChannels: %v)", 768, b.Len(), format.NumChannels)
+		}
+		b.Pop(512)
+		if b.Len() != 768-512 {
+			t.Fatalf("buffer length isn't as expected after Pop: expected: %v, actual: %v (NumChannels: %v)", 768-512, b.Len(), format.NumChannels)
+		}
+	}
+}
