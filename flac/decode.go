@@ -9,19 +9,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Decode takes a ReadCloser containing audio data in FLAC format and returns a StreamSeekCloser,
-// which streams that audio. The Seek method will panic if rc is not io.Seeker.
+// Decode takes a Reader containing audio data in FLAC format and returns a StreamSeekCloser,
+// which streams that audio. The Seek method will panic if r is not io.Seeker.
 //
-// Do not close the supplied ReadSeekCloser, instead, use the Close method of the returned
+// Do not close the supplied Reader, instead, use the Close method of the returned
 // StreamSeekCloser when you want to release the resources.
-func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
-	d := decoder{rc: rc}
-	defer func() { // hacky way to always close rc if an error occurred
-		if err != nil {
-			d.rc.Close()
+func Decode(r io.Reader) (s beep.StreamSeekCloser, format beep.Format, err error) {
+	d := decoder{r: r}
+	defer func() { // hacky way to always close r if an error occurred
+		if closer, ok := d.r.(io.Closer); ok {
+			if err != nil {
+				closer.Close()
+			}
 		}
 	}()
-	d.stream, err = flac.New(rc)
+	d.stream, err = flac.New(r)
 	if err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "flac")
 	}
@@ -34,7 +36,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 }
 
 type decoder struct {
-	rc     io.ReadCloser
+	r      io.Reader
 	stream *flac.Stream
 	buf    [][2]float64
 	pos    int
@@ -141,9 +143,11 @@ func (d *decoder) Seek(p int) error {
 }
 
 func (d *decoder) Close() error {
-	err := d.rc.Close()
-	if err != nil {
-		return errors.Wrap(err, "flac")
+	if closer, ok := d.r.(io.Closer); ok {
+		err := closer.Close()
+		if err != nil {
+			return errors.Wrap(err, "flac")
+		}
 	}
 	return nil
 }
