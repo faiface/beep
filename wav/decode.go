@@ -11,21 +11,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Decode takes a ReadCloser containing audio data in WAVE format and returns a StreamSeekCloser,
+// Decode takes a Reader containing audio data in WAVE format and returns a StreamSeekCloser,
 // which streams that audio. The Seek method will panic if rc is not io.Seeker.
 //
-// Do not close the supplied ReadSeekCloser, instead, use the Close method of the returned
+// Do not close the supplied Reader, instead, use the Close method of the returned
 // StreamSeekCloser when you want to release the resources.
-func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err error) {
-	d := decoder{rc: rc}
-	defer func() { // hacky way to always close rsc if an error occurred
-		if err != nil {
-			d.rc.Close()
+func Decode(r io.Reader) (s beep.StreamSeekCloser, format beep.Format, err error) {
+	d := decoder{r: r}
+	defer func() { // hacky way to always close r if an error occurred
+		if closer, ok := d.r.(io.Closer); ok {
+			if err != nil {
+				closer.Close()
+			}
 		}
 	}()
 
 	// READ "RIFF" header
-	if err := binary.Read(rc, binary.LittleEndian, d.h.RiffMark[:]); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, d.h.RiffMark[:]); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav")
 	}
 	if string(d.h.RiffMark[:]) != "RIFF" {
@@ -33,10 +35,10 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	}
 
 	// READ Total file size
-	if err := binary.Read(rc, binary.LittleEndian, &d.h.FileSize); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &d.h.FileSize); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav: missing RIFF file size")
 	}
-	if err := binary.Read(rc, binary.LittleEndian, d.h.WaveMark[:]); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, d.h.WaveMark[:]); err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "wav: missing RIFF file type")
 	}
 	if string(d.h.WaveMark[:]) != "WAVE" {
@@ -48,17 +50,17 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	var fs int32
 	d.hsz = 4 + 4 + 4 // add size of (RiffMark + FileSize + WaveMark)
 	for string(ft[:]) != "data" {
-		if err = binary.Read(rc, binary.LittleEndian, ft[:]); err != nil {
+		if err = binary.Read(r, binary.LittleEndian, ft[:]); err != nil {
 			return nil, beep.Format{}, errors.Wrap(err, "wav: missing chunk type")
 		}
 		switch {
 		case string(ft[:]) == "fmt ":
 			d.h.FmtMark = ft
-			if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatSize); err != nil {
+			if err := binary.Read(r, binary.LittleEndian, &d.h.FormatSize); err != nil {
 				return nil, beep.Format{}, errors.New("wav: missing format chunk size")
 			}
 			d.hsz += 4 + 4 + d.h.FormatSize // add size of (FmtMark + FormatSize + its trailing size)
-			if err := binary.Read(rc, binary.LittleEndian, &d.h.FormatType); err != nil {
+			if err := binary.Read(r, binary.LittleEndian, &d.h.FormatType); err != nil {
 				return nil, beep.Format{}, errors.New("wav: missing format type")
 			}
 			if d.h.FormatType == -2 {
@@ -67,7 +69,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 					formatchunk{0, 0, 0, 0, 0}, 0, 0, 0,
 					guid{0, 0, 0, [8]byte{0, 0, 0, 0, 0, 0, 0, 0}},
 				}
-				if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
+				if err := binary.Read(r, binary.LittleEndian, &fmtchunk); err != nil {
 					return nil, beep.Format{}, errors.New("wav: missing format chunk body")
 				}
 				d.h.NumChans = fmtchunk.NumChans
@@ -92,7 +94,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 			} else {
 				// WAVEFORMAT or WAVEFORMATEX
 				fmtchunk := formatchunk{0, 0, 0, 0, 0}
-				if err := binary.Read(rc, binary.LittleEndian, &fmtchunk); err != nil {
+				if err := binary.Read(r, binary.LittleEndian, &fmtchunk); err != nil {
 					return nil, beep.Format{}, errors.New("wav: missing format chunk body")
 				}
 				d.h.NumChans = fmtchunk.NumChans
@@ -104,23 +106,23 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 				// it would be skipping cbSize (WAVEFORMATEX's last member).
 				if d.h.FormatSize > 16 {
 					trash := make([]byte, d.h.FormatSize-16)
-					if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
+					if err := binary.Read(r, binary.LittleEndian, trash); err != nil {
 						return nil, beep.Format{}, errors.Wrap(err, "wav: missing extended format chunk body")
 					}
 				}
 			}
 		case string(ft[:]) == "data":
 			d.h.DataMark = ft
-			if err := binary.Read(rc, binary.LittleEndian, &d.h.DataSize); err != nil {
+			if err := binary.Read(r, binary.LittleEndian, &d.h.DataSize); err != nil {
 				return nil, beep.Format{}, errors.Wrap(err, "wav: missing data chunk size")
 			}
 			d.hsz += 4 + 4 //add size of (DataMark + DataSize)
 		default:
-			if err := binary.Read(rc, binary.LittleEndian, &fs); err != nil {
+			if err := binary.Read(r, binary.LittleEndian, &fs); err != nil {
 				return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk size")
 			}
 			trash := make([]byte, fs)
-			if err := binary.Read(rc, binary.LittleEndian, trash); err != nil {
+			if err := binary.Read(r, binary.LittleEndian, trash); err != nil {
 				return nil, beep.Format{}, errors.Wrap(err, "wav: missing unknown chunk body")
 			}
 			d.hsz += 4 + fs //add size of (Unknown formtype + formsize)
@@ -190,7 +192,7 @@ type header struct {
 }
 
 type decoder struct {
-	rc  io.ReadCloser
+	r   io.Reader
 	h   header
 	hsz int32
 	pos int32
@@ -207,7 +209,7 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 		numBytes = d.h.DataSize - d.pos
 	}
 	p := make([]byte, numBytes)
-	n, err := d.rc.Read(p)
+	n, err := d.r.Read(p)
 	if err != nil && err != io.EOF {
 		d.err = err
 	}
@@ -265,7 +267,7 @@ func (d *decoder) Position() int {
 }
 
 func (d *decoder) Seek(p int) error {
-	seeker, ok := d.rc.(io.Seeker)
+	seeker, ok := d.r.(io.Seeker)
 	if !ok {
 		panic(fmt.Errorf("wav: seek: resource is not io.Seeker"))
 	}
@@ -282,9 +284,11 @@ func (d *decoder) Seek(p int) error {
 }
 
 func (d *decoder) Close() error {
-	err := d.rc.Close()
-	if err != nil {
-		return errors.Wrap(err, "wav")
+	if closer, ok := d.r.(io.Closer); ok {
+		err := closer.Close()
+		if err != nil {
+			return errors.Wrap(err, "wav")
+		}
 	}
 	return nil
 }
