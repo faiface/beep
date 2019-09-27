@@ -9,5 +9,3 @@ require (
 	github.com/mewkiz/flac v1.0.5
 	github.com/pkg/errors v0.8.1
 )
-
-go 1.13
