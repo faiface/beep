@@ -56,6 +56,14 @@ func ResampleRatio(quality int, ratio float64, s Streamer) *Resampler {
 	}
 }
 
+// ResampleSemitones is same as Resample, except it takes the old sample rate and the number of semitones
+// by which the note would be, one semitone higher if possitive. It can be used to pitch up and down a sample
+// or to play a sample chromatically.
+func ResampleSemitones(quality int, old SampleRate, semitones int, streamer Streamer) *Resampler {
+	new := float64(old) * math.Exp2(float64(semitones)/12.)
+	return ResampleRatio(quality, float64(old)/new, streamer)
+}
+
 // Resampler is a Streamer created by Resample and ResampleRatio functions. It allows dynamic
 // changing of the resampling ratio, which can be useful for dynamically changing the speed of
 // streaming.
