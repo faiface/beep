@@ -1,6 +1,9 @@
 package beep
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // Resample takes a Streamer which is assumed to stream at the old sample rate and returns a
 // Streamer, which streams the data from the original Streamer resampled to the new sample rate.
