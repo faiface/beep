@@ -21,7 +21,7 @@ func Silence(num int) Streamer {
 }
 
 // Callback returns a Streamer, which does not stream any samples, but instead calls f the first
-// time its Stream method is called.
+// time its Stream method is called. The speaker is locked while f is called.
 func Callback(f func()) Streamer {
 	return StreamerFunc(func(samples [][2]float64) (n int, ok bool) {
 		if f != nil {
