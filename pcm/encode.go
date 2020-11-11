@@ -7,6 +7,7 @@ import (
 	"github.com/faiface/beep"
 )
 
+// Encode writes all audio streamed from s to w in raw PCM format.
 func Encode(w io.Writer, s beep.Streamer, format beep.Format) error {
 	var (
 		bw      = bufio.NewWriter(w)

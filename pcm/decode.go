@@ -6,6 +6,16 @@ import (
 	"github.com/faiface/beep"
 )
 
+// Decode takes a Reader containing audio data in raw PCM format and returns a Streamer,
+// which streams that audio.
+func Decode(r io.Reader, format beep.Format) beep.Streamer {
+	return &stream{
+		r:   r,
+		f:   format,
+		buf: make([]byte, 512*format.Width()),
+	}
+}
+
 type stream struct {
 	r   io.Reader
 	f   beep.Format
@@ -13,14 +23,6 @@ type stream struct {
 	len int
 	pos int
 	err error
-}
-
-func Decode(r io.Reader, format beep.Format) beep.Streamer {
-	return &stream{
-		r:   r,
-		f:   format,
-		buf: make([]byte, 512*format.Width()),
-	}
 }
 
 func (s *stream) Err() error { return s.err }
