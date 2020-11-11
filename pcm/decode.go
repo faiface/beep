@@ -48,7 +48,9 @@ func (s *stream) Stream(samples [][2]float64) (n int, ok bool) {
 	// refill the buffer
 	nbytes, err := s.r.Read(s.buf[s.len:])
 	if err != nil {
-		s.err = err
+		if err != io.EOF {
+			s.err = err
+		}
 		return n, false
 	}
 	s.len += nbytes
