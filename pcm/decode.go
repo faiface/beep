@@ -39,7 +39,7 @@ func (s *stream) Stream(samples [][2]float64) (n int, ok bool) {
 	if n == len(samples) {
 		return n, true
 	}
-	// if there's a partial frame, move it to the beginning of the buffer
+	// if there's a partial sample, move it to the beginning of the buffer
 	if s.len-s.pos != 0 {
 		copy(s.buf, s.buf[s.pos:s.len])
 	}
