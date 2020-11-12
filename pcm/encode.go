@@ -30,11 +30,11 @@ func Encode(w io.Writer, s beep.Streamer, format beep.Format) error {
 }
 
 // NewReader returns an io.Reader of the audio stream formatted as raw PCM.
-func NewReader(s beep.Streamer, format beep.Format) io.Reader {
+func NewReader(s beep.Streamer, format beep.Format, bufferSize int) io.Reader {
 	return &reader{
 		s:       s,
 		f:       format,
-		samples: make([][2]float64, 512),
+		samples: make([][2]float64, bufferSize),
 	}
 }
 
