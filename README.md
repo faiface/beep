@@ -43,6 +43,6 @@ Running an already built application should work with no extra dependencies.
 
 [MIT](https://github.com/faiface/beep/blob/master/LICENSE)
 
-## Projects using `beep`
+## Projects using beep
 
 - [Mifasol music server](https://github.com/jypelle/mifasol)
