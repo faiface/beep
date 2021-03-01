@@ -118,7 +118,7 @@ func update() {
 			if val > +1 {
 				val = +1
 			}
-			valInt16 := int16(val * (1<<15 - 1))
+			valInt16 := int16((val+1)/2*(1<<16-1) + (-1 << 15))
 			low := byte(valInt16)
 			high := byte(valInt16 >> 8)
 			buf[i*4+c*2+0] = low
