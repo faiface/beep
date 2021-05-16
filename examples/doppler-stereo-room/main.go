@@ -94,15 +94,35 @@ func drawHelp(screen tcell.Screen, style tcell.Style) {
 	drawTextLine(screen, 0, 4, "Press to start moving, press again to stop. Use [SHIFT] to move fast.", style)
 }
 
-var directions = map[rune]struct{ lx, ly, rx, ry float64 }{
-	'a': {-1, 0, 0, 0},
-	'd': {+1, 0, 0, 0},
-	'w': {0, -1, 0, 0},
-	's': {0, +1, 0, 0},
-	'j': {0, 0, -1, 0},
-	'l': {0, 0, +1, 0},
-	'i': {0, 0, 0, -1},
-	'k': {0, 0, 0, +1},
+type DirectionMode int
+
+const (
+	_ DirectionMode = iota
+	Applied
+	SetPoint
+)
+
+type EventMappedLocation struct {
+	lx,
+	ly,
+	rx,
+	ry float64
+	using DirectionMode
+}
+
+
+var directions = map[rune]EventMappedLocation{
+	// Left
+	'a': {-1, 0, 0, 0, Applied},
+	'd': {+1, 0, 0, 0, Applied},
+	'w': {0, -1, 0, 0, Applied},
+	's': {0, +1, 0, 0, Applied},
+
+	// Right
+	'j': {0, 0, -1, 0, Applied},
+	'l': {0, 0, +1, 0, Applied},
+	'i': {0, 0, 0, -1, Applied},
+	'k': {0, 0, 0, +1, Applied},
 }
 
 func main() {
@@ -197,32 +217,34 @@ loop:
 
 				dir := directions[unicode.ToLower(event.Rune())]
 
-				if dir.lx != 0 {
-					if leftMS.velX == dir.lx*speed {
-						leftMS.velX = 0
-					} else {
-						leftMS.velX = dir.lx * speed
+				if dir.using == Applied {
+					if dir.lx != 0 {
+						if leftMS.velX == dir.lx*speed {
+							leftMS.velX = 0
+						} else {
+							leftMS.velX = dir.lx * speed
+						}
 					}
-				}
-				if dir.ly != 0 {
-					if leftMS.velY == dir.ly*speed {
-						leftMS.velY = 0
-					} else {
-						leftMS.velY = dir.ly * speed
+					if dir.ly != 0 {
+						if leftMS.velY == dir.ly*speed {
+							leftMS.velY = 0
+						} else {
+							leftMS.velY = dir.ly * speed
+						}
 					}
-				}
-				if dir.rx != 0 {
-					if rightMS.velX == dir.rx*speed {
-						rightMS.velX = 0
-					} else {
-						rightMS.velX = dir.rx * speed
+					if dir.rx != 0 {
+						if rightMS.velX == dir.rx*speed {
+							rightMS.velX = 0
+						} else {
+							rightMS.velX = dir.rx * speed
+						}
 					}
-				}
-				if dir.ry != 0 {
-					if rightMS.velY == dir.ry*speed {
-						rightMS.velY = 0
-					} else {
-						rightMS.velY = dir.ry * speed
+					if dir.ry != 0 {
+						if rightMS.velY == dir.ry*speed {
+							rightMS.velY = 0
+						} else {
+							rightMS.velY = dir.ry * speed
+						}
 					}
 				}
 
