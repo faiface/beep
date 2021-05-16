@@ -130,8 +130,8 @@ var directions = map[rune]EventMappedLocation{
 	'4': {-1.5, 0, -1, 0, SetPoint},
 	'6': { 1,0,  1.5,0, SetPoint},
 	// Layout Top Left, Top Right, Bottom Right, Bottom Left
-	'7': {-0.8, -1.8, -1.8, -1.8, SetPoint},
-	'9': {1.8, -1.8, 0.8, -1.8, SetPoint},
+	'7': {-1.8, -1.8,-0.8, -1.8, SetPoint},
+	'9': {0.8, -1.8,1.8, -1.8,  SetPoint},
 	'1': {-1.8, 1.8, -0.8, 1.8, SetPoint},
 	'3': {0.8, 1.8, 1.8, 1.8, SetPoint},
 
