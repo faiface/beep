@@ -110,8 +110,14 @@ type EventMappedLocation struct {
 	using DirectionMode
 }
 
+var ResetLocation = EventMappedLocation{-1, 0, 1, 0, SetPoint}
 
 var directions = map[rune]EventMappedLocation{
+
+	// Reset
+	'5': ResetLocation,
+	'r': ResetLocation,
+
 	// Left
 	'a': {-1, 0, 0, 0, Applied},
 	'd': {+1, 0, 0, 0, Applied},
@@ -246,6 +252,16 @@ loop:
 							rightMS.velY = dir.ry * speed
 						}
 					}
+				} else if dir.using == SetPoint {
+					leftMS.velX = 0
+					leftMS.velY = 0
+					rightMS.velX = 0
+					rightMS.velY = 0
+
+					leftMS.x = dir.lx
+					leftMS.y = dir.ly
+					rightMS.x = dir.rx
+					rightMS.y = dir.ry
 				}
 
 				speaker.Unlock()
