@@ -91,7 +91,11 @@ func drawHelp(screen tcell.Screen, style tcell.Style) {
 	drawTextLine(screen, 9, 3, "RIGHT", style.Background(tcell.ColorBlue).Foreground(tcell.ColorWhiteSmoke))
 	drawTextLine(screen, 15, 3, "speaker with IJKL.", style)
 
-	drawTextLine(screen, 0, 4, "Press to start moving, press again to stop. Use [SHIFT] to move fast.", style)
+	drawTextLine(screen, 0, 4, "Move the", style)
+	drawTextLine(screen, 9, 4, "BOTH", style.Background(tcell.ColorDeepPink).Foreground(tcell.ColorWhiteSmoke))
+	drawTextLine(screen, 15, 4, "speakers with the Numpad Buttons 1-9.", style)
+
+	drawTextLine(screen, 0, 5, "Press to start moving, press again to stop. Use [SHIFT] to move fast.", style)
 }
 
 type DirectionMode int
@@ -117,6 +121,19 @@ var directions = map[rune]EventMappedLocation{
 	// Reset
 	'5': ResetLocation,
 	'r': ResetLocation,
+
+	// Numb Pad Layout Mapped
+	// Front, Back
+	'8': {-1, -1, 1, -1, SetPoint},
+	'2': {-1, 1, 1, 1, SetPoint},
+	// Left, Right
+	'4': {-1.5, 0, -1, 0, SetPoint},
+	'6': { 1,0,  1.5,0, SetPoint},
+	// Layout Top Left, Top Right, Bottom Right, Bottom Left
+	'7': {-0.8, -1.8, -1.8, -1.8, SetPoint},
+	'9': {1.8, -1.8, 0.8, -1.8, SetPoint},
+	'1': {-1.8, 1.8, -0.8, 1.8, SetPoint},
+	'3': {0.8, 1.8, 1.8, 1.8, SetPoint},
 
 	// Left
 	'a': {-1, 0, 0, 0, Applied},
