@@ -127,8 +127,8 @@ func main() {
 	leftCh = effects.Mono(multiplyChannels(1, 0, leftCh))
 	rightCh = effects.Mono(multiplyChannels(0, 1, rightCh))
 
-	leftMS := newMovingStreamer(format.SampleRate, -2, 0, leftCh)
-	rightMS := newMovingStreamer(format.SampleRate, +2, 0, rightCh)
+	leftMS := newMovingStreamer(format.SampleRate, -1, 0, leftCh)
+	rightMS := newMovingStreamer(format.SampleRate, +1, 0, rightCh)
 
 	leftMS.play()
 	rightMS.play()
