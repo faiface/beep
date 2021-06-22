@@ -17,7 +17,7 @@ type (
 		F0, Bf, GB, G0, G float64
 	}
 
-	Equalizer struct {
+	equalizer struct {
 		streamer beep.Streamer
 		sections []section
 	}
@@ -73,7 +73,7 @@ func (s *section) apply(x [][2]float64) [][2]float64 {
 }
 
 func NewEqualizer(s beep.Streamer, fs float64, sections []EqualizerSection) beep.Streamer {
-	out := &Equalizer{
+	out := &equalizer{
 		streamer: s,
 	}
 
@@ -101,7 +101,7 @@ func NewEqualizer(s beep.Streamer, fs float64, sections []EqualizerSection) beep
 }
 
 // Stream streams the wrapped Streamer modified by Equalizer.
-func (e *Equalizer) Stream(samples [][2]float64) (n int, ok bool) {
+func (e *equalizer) Stream(samples [][2]float64) (n int, ok bool) {
 	n, ok = e.streamer.Stream(samples)
 	for _, s := range e.sections {
 		copy(samples, s.apply(samples))
@@ -110,6 +110,6 @@ func (e *Equalizer) Stream(samples [][2]float64) (n int, ok bool) {
 }
 
 // Err propagates the wrapped Streamer's errors.
-func (e *Equalizer) Err() error {
+func (e *equalizer) Err() error {
 	return e.streamer.Err()
 }
