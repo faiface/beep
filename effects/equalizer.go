@@ -13,7 +13,7 @@ type (
 		xPast, yPast [][2]float64
 	}
 
-	Section struct {
+	EqualizerSection struct {
 		F0, Bf, GB, G0, G float64
 	}
 
@@ -72,27 +72,27 @@ func (s *section) apply(x [][2]float64) [][2]float64 {
 	return y
 }
 
-func NewEqualizer(s beep.Streamer, fs float64, filters []Section) *Equalizer {
+func NewEqualizer(s beep.Streamer, fs float64, sections []EqualizerSection) beep.Streamer {
 	out := &Equalizer{
 		streamer: s,
 	}
 
-	for _, f := range filters {
-		beta := math.Tan(f.Bf/2.0*math.Pi/(fs/2.0)) *
-			math.Sqrt(math.Abs(math.Pow(math.Pow(10, f.GB/20.0), 2.0)-
-				math.Pow(math.Pow(10.0, f.G0/20.0), 2.0))) /
-			math.Sqrt(math.Abs(math.Pow(math.Pow(10.0, f.G/20.0), 2.0)-
-				math.Pow(math.Pow(10.0, f.GB/20.0), 2.0)))
+	for _, s := range sections {
+		beta := math.Tan(s.Bf/2.0*math.Pi/(fs/2.0)) *
+			math.Sqrt(math.Abs(math.Pow(math.Pow(10, s.GB/20.0), 2.0)-
+				math.Pow(math.Pow(10.0, s.G0/20.0), 2.0))) /
+			math.Sqrt(math.Abs(math.Pow(math.Pow(10.0, s.G/20.0), 2.0)-
+				math.Pow(math.Pow(10.0, s.GB/20.0), 2.0)))
 
 		b := []float64{
-			(math.Pow(10.0, f.G0/20.0) + math.Pow(10.0, f.G/20.0)*beta) / (1 + beta),
-			(-2 * math.Pow(10.0, f.G0/20.0) * math.Cos(f.F0*math.Pi/(fs/2.0))) / (1 + beta),
-			(math.Pow(10.0, f.G0/20) - math.Pow(10.0, f.G/20.0)*beta) / (1 + beta),
+			(math.Pow(10.0, s.G0/20.0) + math.Pow(10.0, s.G/20.0)*beta) / (1 + beta),
+			(-2 * math.Pow(10.0, s.G0/20.0) * math.Cos(s.F0*math.Pi/(fs/2.0))) / (1 + beta),
+			(math.Pow(10.0, s.G0/20) - math.Pow(10.0, s.G/20.0)*beta) / (1 + beta),
 		}
 
 		a := []float64{
 			1.0,
-			-2 * math.Cos(f.F0*math.Pi/(fs/2.0)) / (1 + beta),
+			-2 * math.Cos(s.F0*math.Pi/(fs/2.0)) / (1 + beta),
 			(1 - beta) / (1 + beta),
 		}
 		out.sections = append(out.sections, section{a: a, b: b})
