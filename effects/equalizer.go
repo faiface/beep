@@ -104,8 +104,9 @@ func (s *section) apply(x [][2]float64) [][2]float64 {
 }
 
 // NewEqualizer returns a beep.Streamer that modifies the stream based on the EqualizerSection slice that is passed in.
-// The sample frequency (fs) must match that of the Streamer.
-func NewEqualizer(s beep.Streamer, fs float64, sections []EqualizerSection) beep.Streamer {
+// The SampleRate (sr) must match that of the Streamer.
+func NewEqualizer(s beep.Streamer, sr beep.SampleRate, sections []EqualizerSection) beep.Streamer {
+	fs := float64(sr)
 	out := &equalizer{
 		streamer: s,
 	}
