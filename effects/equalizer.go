@@ -6,20 +6,51 @@ import (
 	"github.com/faiface/beep"
 )
 
-// https://octovoid.com/2017/11/04/coding-a-parametric-equalizer-for-audio-applications/
 type (
+
+	// This parametric equalizer is based on the GK Nilsen's post at:
+	// https://octovoid.com/2017/11/04/coding-a-parametric-equalizer-for-audio-applications/
+	equalizer struct {
+		streamer beep.Streamer
+		sections []section
+	}
+
 	section struct {
 		a, b         []float64
 		xPast, yPast [][2]float64
 	}
 
 	EqualizerSection struct {
-		F0, Bf, GB, G0, G float64
-	}
+		// F0 (center frequency) sets the mid-point of the section’s
+		// frequency range and is given in Hertz [Hz].
+		F0 float64
 
-	equalizer struct {
-		streamer beep.Streamer
-		sections []section
+		// Bf (bandwidth) represents the width of the section across
+		// frequency and is measured in Hertz [Hz]. A low bandwidth
+		// corresponds to a narrow frequency range meaning that the
+		// section will concentrate its operation to only the
+		// frequencies close to the center frequency. On the other hand,
+		// a high bandwidth yields a section of wide frequency range —
+		// affecting a broader range of frequencies surrounding the
+		// center frequency.
+		Bf float64
+
+		// GB (bandwidth gain) is given in decibels [dB] and represents
+		// the level at which the bandwidth is measured. That is, to
+		// have a meaningful measure of bandwidth, we must define the
+		// level at which it is measured. See Figure 1.
+		GB float64
+
+		// G0 (reference gain) is given in decibels [dB] and simply
+		// represents the level of the section’s offset. See Figure 1.
+		G0 float64
+
+		//G (boost/cut gain) is given in decibels [dB] and prescribes
+		//the effect imposed on the audio loudness for the section’s
+		//frequency range. A boost/cut level of 0 dB corresponds to
+		//unity (no operation), whereas negative numbers corresponds to
+		//cut (volume down) and positive numbers to boost (volume up).
+		G float64
 	}
 )
 
