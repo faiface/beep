@@ -38,11 +38,11 @@ type (
 		// GB (bandwidth gain) is given in decibels [dB] and represents
 		// the level at which the bandwidth is measured. That is, to
 		// have a meaningful measure of bandwidth, we must define the
-		// level at which it is measured. See Figure 1.
+		// level at which it is measured.
 		GB float64
 
 		// G0 (reference gain) is given in decibels [dB] and simply
-		// represents the level of the section’s offset. See Figure 1.
+		// represents the level of the section’s offset.
 		G0 float64
 
 		//G (boost/cut gain) is given in decibels [dB] and prescribes
