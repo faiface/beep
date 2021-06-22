@@ -45,11 +45,11 @@ type (
 		// represents the level of the section’s offset.
 		G0 float64
 
-		//G (boost/cut gain) is given in decibels [dB] and prescribes
-		//the effect imposed on the audio loudness for the section’s
-		//frequency range. A boost/cut level of 0 dB corresponds to
-		//unity (no operation), whereas negative numbers corresponds to
-		//cut (volume down) and positive numbers to boost (volume up).
+		// G (boost/cut gain) is given in decibels [dB] and prescribes
+		// the effect imposed on the audio loudness for the section’s
+		// frequency range. A boost/cut level of 0 dB corresponds to
+		// unity (no operation), whereas negative numbers corresponds to
+		// cut (volume down) and positive numbers to boost (volume up).
 		G float64
 	}
 )
