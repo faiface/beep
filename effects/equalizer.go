@@ -92,10 +92,10 @@ func (s *section) apply(x [][2]float64) [][2]float64 {
 				y[i][0] = y[i][0] - s.a[j+1]*y[i-j-1][0]
 				y[i][1] = y[i][1] - s.a[j+1]*y[i-j-1][1]
 			}
-
-			y[i][0] = y[i][0] / s.a[0]
-			y[i][1] = y[i][1] / s.a[0]
 		}
+
+		y[i][0] = y[i][0] / s.a[0]
+		y[i][1] = y[i][1] / s.a[0]
 	}
 
 	s.xPast = x
