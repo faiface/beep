@@ -23,7 +23,15 @@ func Decode(r io.Reader) (s beep.StreamSeekCloser, format beep.Format, err error
 			}
 		}
 	}()
-	d.stream, err = flac.New(r)
+
+	rs, seeker := r.(io.ReadSeeker)
+	if seeker {
+		d.stream, err = flac.NewSeek(rs)
+		d.seekEnabled = true
+	} else {
+		d.stream, err = flac.New(r)
+	}
+
 	if err != nil {
 		return nil, beep.Format{}, errors.Wrap(err, "flac")
 	}
@@ -36,11 +44,12 @@ func Decode(r io.Reader) (s beep.StreamSeekCloser, format beep.Format, err error
 }
 
 type decoder struct {
-	r      io.Reader
-	stream *flac.Stream
-	buf    [][2]float64
-	pos    int
-	err    error
+	r           io.Reader
+	stream      *flac.Stream
+	buf         [][2]float64
+	pos         int
+	err         error
+	seekEnabled bool
 }
 
 func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
@@ -138,8 +147,15 @@ func (d *decoder) Position() int {
 	return d.pos
 }
 
+// p represents flac sample num perhaps?
 func (d *decoder) Seek(p int) error {
-	return errors.New("flac.decoder.Seek: not yet implemented")
+	if !d.seekEnabled {
+		return errors.New("flac.decoder.Seek: not enabled")
+	}
+
+	pos, err := d.stream.Seek(uint64(p))
+	d.pos = int(pos)
+	return err
 }
 
 func (d *decoder) Close() error {
