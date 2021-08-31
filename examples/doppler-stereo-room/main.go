@@ -91,18 +91,65 @@ func drawHelp(screen tcell.Screen, style tcell.Style) {
 	drawTextLine(screen, 9, 3, "RIGHT", style.Background(tcell.ColorBlue).Foreground(tcell.ColorWhiteSmoke))
 	drawTextLine(screen, 15, 3, "speaker with IJKL.", style)
 
-	drawTextLine(screen, 0, 4, "Press to start moving, press again to stop. Use [SHIFT] to move fast.", style)
+	drawTextLine(screen, 0, 4, "Move the", style)
+	drawTextLine(screen, 9, 4, "BOTH", style.Background(tcell.ColorDeepPink).Foreground(tcell.ColorWhiteSmoke))
+	drawTextLine(screen, 15, 4, "speakers with the Numpad Buttons 1-9.", style)
+
+	drawTextLine(screen, 0, 5, "Press to start moving, press again to stop. Use [SHIFT] to move fast.", style)
 }
 
-var directions = map[rune]struct{ lx, ly, rx, ry float64 }{
-	'a': {-1, 0, 0, 0},
-	'd': {+1, 0, 0, 0},
-	'w': {0, -1, 0, 0},
-	's': {0, +1, 0, 0},
-	'j': {0, 0, -1, 0},
-	'l': {0, 0, +1, 0},
-	'i': {0, 0, 0, -1},
-	'k': {0, 0, 0, +1},
+type DirectionMode int
+
+const (
+	_ DirectionMode = iota
+	Applied
+	SetPoint
+)
+
+type EventMappedLocation struct {
+	lx,
+	ly,
+	rx,
+	ry float64
+	using DirectionMode
+}
+
+var ResetLocation = EventMappedLocation{-1, 0, 1, 0, SetPoint}
+
+var directions = map[rune]EventMappedLocation{
+
+	// Reset
+	'5': ResetLocation,
+	'r': ResetLocation,
+
+	// Numb Pad Layout Mapped
+	// Front, Back
+	'8': {-1, -1, 1, -1, SetPoint},
+	'2': {-1, 1, 1, 1, SetPoint},
+	// Left, Right
+	'4': {-1.5, 0, -1, 0, SetPoint},
+	'6': { 1,0,  1.5,0, SetPoint},
+	// Layout Top Left, Top Right, Bottom Right, Bottom Left
+	'7': {-1.8, -1.8,-0.8, -1.8, SetPoint},
+	'9': {0.8, -1.8,1.8, -1.8,  SetPoint},
+	'1': {-1.8, 1.8, -0.8, 1.8, SetPoint},
+	'3': {0.8, 1.8, 1.8, 1.8, SetPoint},
+
+	// Diagonal Locations
+	'\\': {-1, -1, 1, 1, SetPoint},
+	'/': {-1, 1, 1, -1, SetPoint},
+
+	// Left
+	'a': {-1, 0, 0, 0, Applied},
+	'd': {+1, 0, 0, 0, Applied},
+	'w': {0, -1, 0, 0, Applied},
+	's': {0, +1, 0, 0, Applied},
+
+	// Right
+	'j': {0, 0, -1, 0, Applied},
+	'l': {0, 0, +1, 0, Applied},
+	'i': {0, 0, 0, -1, Applied},
+	'k': {0, 0, 0, +1, Applied},
 }
 
 func main() {
@@ -127,8 +174,8 @@ func main() {
 	leftCh = effects.Mono(multiplyChannels(1, 0, leftCh))
 	rightCh = effects.Mono(multiplyChannels(0, 1, rightCh))
 
-	leftMS := newMovingStreamer(format.SampleRate, -2, 0, leftCh)
-	rightMS := newMovingStreamer(format.SampleRate, +2, 0, rightCh)
+	leftMS := newMovingStreamer(format.SampleRate, -1, 0, leftCh)
+	rightMS := newMovingStreamer(format.SampleRate, +1, 0, rightCh)
 
 	leftMS.play()
 	rightMS.play()
@@ -197,33 +244,45 @@ loop:
 
 				dir := directions[unicode.ToLower(event.Rune())]
 
-				if dir.lx != 0 {
-					if leftMS.velX == dir.lx*speed {
-						leftMS.velX = 0
-					} else {
-						leftMS.velX = dir.lx * speed
+				if dir.using == Applied {
+					if dir.lx != 0 {
+						if leftMS.velX == dir.lx*speed {
+							leftMS.velX = 0
+						} else {
+							leftMS.velX = dir.lx * speed
+						}
 					}
-				}
-				if dir.ly != 0 {
-					if leftMS.velY == dir.ly*speed {
-						leftMS.velY = 0
-					} else {
-						leftMS.velY = dir.ly * speed
+					if dir.ly != 0 {
+						if leftMS.velY == dir.ly*speed {
+							leftMS.velY = 0
+						} else {
+							leftMS.velY = dir.ly * speed
+						}
 					}
-				}
-				if dir.rx != 0 {
-					if rightMS.velX == dir.rx*speed {
-						rightMS.velX = 0
-					} else {
-						rightMS.velX = dir.rx * speed
+					if dir.rx != 0 {
+						if rightMS.velX == dir.rx*speed {
+							rightMS.velX = 0
+						} else {
+							rightMS.velX = dir.rx * speed
+						}
 					}
-				}
-				if dir.ry != 0 {
-					if rightMS.velY == dir.ry*speed {
-						rightMS.velY = 0
-					} else {
-						rightMS.velY = dir.ry * speed
+					if dir.ry != 0 {
+						if rightMS.velY == dir.ry*speed {
+							rightMS.velY = 0
+						} else {
+							rightMS.velY = dir.ry * speed
+						}
 					}
+				} else if dir.using == SetPoint {
+					leftMS.velX = 0
+					leftMS.velY = 0
+					rightMS.velX = 0
+					rightMS.velY = 0
+
+					leftMS.x = dir.lx
+					leftMS.y = dir.ly
+					rightMS.x = dir.rx
+					rightMS.y = dir.ry
 				}
 
 				speaker.Unlock()
