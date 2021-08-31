@@ -1,14 +1,29 @@
 package main
 
 import (
-	"os"
+	"fmt"
+	"github.com/faiface/beep"
 	"github.com/faiface/beep/generators"
 	"github.com/faiface/beep/speaker"
-	"github.com/faiface/beep"
+	"os"
 	"strconv"
 )
+
+func usage() {
+	fmt.Printf("usage: %s freq\n", os.Args[0])
+	fmt.Println("where freq must be an integer from 1 to 24000")
+	fmt.Println("24000 because samplerate of 48000 is hardcoded")
+}
 func main() {
-	f, _ := strconv.Atoi(os.Args[1])
+	if len(os.Args) < 2 {
+		usage()
+		return
+	}
+	f, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		usage()
+		return
+	}
 	speaker.Init(beep.SampleRate(48000), 4800)
 	s, err := generators.SinTone(beep.SampleRate(48000), f)
 	if err != nil {
