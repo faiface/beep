@@ -9,7 +9,10 @@ import "strconv"
 func main() {
 f,_ := strconv.Atoi(os.Args[1])
 speaker.Init(beep.SampleRate(48000), 4800)
-s := generators.SinTone(beep.SampleRate(48000), f)
+s,err := generators.SinTone(beep.SampleRate(48000), f)
+if err != nil {
+panic(err)
+}
 speaker.Play(s)
 for {
 
