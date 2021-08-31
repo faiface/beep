@@ -1,9 +1,10 @@
 // tones generator
 
 
-package beep
+package generators
 
 import "math"
+import . "github.com/faiface/beep"
 
 // simple sinusoid tone generator
 type toneStreamer struct {
