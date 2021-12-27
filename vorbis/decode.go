@@ -9,10 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	govorbisNumChannels = 2
-	govorbisPrecision   = 2
-)
+const govorbisPrecision = 2
 
 // Decode takes a ReadCloser containing audio data in ogg/vorbis format and returns a StreamSeekCloser,
 // which streams that audio. The Seek method will panic if rc is not io.Seeker.
@@ -31,7 +28,7 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	}
 	format = beep.Format{
 		SampleRate:  beep.SampleRate(d.SampleRate()),
-		NumChannels: govorbisNumChannels,
+		NumChannels: d.Channels(),
 		Precision:   govorbisPrecision,
 	}
 	return &decoder{rc, d, format, nil}, format, nil
