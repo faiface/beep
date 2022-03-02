@@ -44,8 +44,8 @@ func SawtoothToneReversed(sr beep.SampleRate, freq float64) (beep.Streamer, erro
 func (g *sawGenerator) Stream(samples [][2]float64) (n int, ok bool) {
 	if g.reverse {
 		for i := range samples {
-			samples[i][0] = 2.0 * (1 - g.t)
-			samples[i][1] = 2.0 * (1 - g.t)
+			samples[i][0] = 2.0*(1-g.t) - 1
+			samples[i][1] = 2.0*(1-g.t) - 1
 			_, g.t = math.Modf(g.t + g.dt)
 		}
 	} else {
