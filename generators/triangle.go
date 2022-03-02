@@ -28,11 +28,11 @@ func TriangleTone(sr beep.SampleRate, freq float64) (beep.Streamer, error) {
 func (g *triangleGenerator) Stream(samples [][2]float64) (n int, ok bool) {
 	for i := range samples {
 		if g.t < 0.5 {
-			samples[i][0] = 2.0 * g.t
-			samples[i][1] = 2.0 * g.t
+			samples[i][0] = 2.0*(1-g.t) - 1
+			samples[i][1] = 2.0*(1-g.t) - 1
 		} else {
-			samples[i][0] = 2.0 * (1.0 - g.t)
-			samples[i][1] = 2.0 * (1.0 - g.t)
+			samples[i][0] = 2.0*g.t - 1.0
+			samples[i][1] = 2.0*g.t - 1.0
 		}
 		_, g.t = math.Modf(g.t + g.dt)
 	}
