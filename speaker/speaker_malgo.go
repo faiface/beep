@@ -1,26 +1,36 @@
-//go:build !malgo || oto
-// +build !malgo oto
+//go:build malgo
+// +build malgo
 
 // Package speaker implements playback of beep.Streamer values through physical speakers.
 package speaker
 
 import (
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/faiface/beep"
-	"github.com/hajimehoshi/oto"
+	"github.com/gen2brain/malgo"
 	"github.com/pkg/errors"
+	"github.com/sheerun/queue"
 )
 
 var (
 	mu      sync.Mutex
 	mixer   beep.Mixer
 	samples [][2]float64
-	buf     []byte
-	context *oto.Context
-	player  *oto.Player
+	context *malgo.AllocatedContext
+	player  *malgo.Device
 	done    chan struct{}
+	q       *queue.Queue
 )
+
+type SpeakerDevice struct {
+	info malgo.DeviceInfo
+	Name string
+}
+
+type chooseDeviceCB func(deviceList []SpeakerDevice) *SpeakerDevice
 
 // Init initializes audio playback through speaker. Must be called before using this package.
 //
@@ -28,6 +38,35 @@ var (
 // bufferSize means lower CPU usage and more reliable playback. Lower bufferSize means better
 // responsiveness and less delay.
 func Init(sampleRate beep.SampleRate, bufferSize int) error {
+	return InitDeviceSelection(sampleRate, bufferSize, nil)
+}
+
+func configure(sampleRate beep.SampleRate, cb chooseDeviceCB) (malgo.DeviceConfig, error) {
+
+	deviceConfig := malgo.DefaultDeviceConfig(malgo.Playback)
+	deviceConfig.Playback.Format = malgo.FormatS16
+	deviceConfig.Playback.Channels = 2 //channels
+	deviceConfig.SampleRate = uint32(sampleRate)
+	deviceConfig.Alsa.NoMMap = 1
+
+	if cb != nil {
+		playbackDevices, err := context.Devices(malgo.Playback)
+		if err != nil {
+			return malgo.DeviceConfig{}, err
+		}
+		speakerList := []SpeakerDevice{}
+		for _, device := range playbackDevices {
+			speakerList = append(speakerList, SpeakerDevice{device, device.Name()})
+		}
+		ret := cb(speakerList)
+		if ret != nil {
+			deviceConfig.Playback.DeviceID = ret.info.ID.Pointer()
+		}
+	}
+	return deviceConfig, nil
+}
+
+func InitDeviceSelection(sampleRate beep.SampleRate, bufferSize int, cb chooseDeviceCB) error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -35,16 +74,50 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 
 	mixer = beep.Mixer{}
 
-	numBytes := bufferSize * 4
 	samples = make([][2]float64, bufferSize)
-	buf = make([]byte, numBytes)
 
 	var err error
-	context, err = oto.NewContext(int(sampleRate), 2, 2, numBytes)
+	context, err = malgo.InitContext(nil, malgo.ContextConfig{}, func(message string) {
+		fmt.Printf("LOG <%v>\n", message)
+	})
+
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize speaker")
+		return errors.Wrap(err, "failed to initialize speaker (context)")
 	}
-	player = context.NewPlayer()
+
+	var deviceConfig malgo.DeviceConfig
+	deviceConfig, err = configure(sampleRate, cb)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize speaker (configure)")
+	}
+
+	q = queue.New()
+
+	onSamples := func(pOutputSample, pInputSamples []byte, framecount uint32) {
+		byteCount := framecount * deviceConfig.Playback.Channels * uint32(malgo.SampleSizeInBytes(deviceConfig.Playback.Format))
+		var i uint32 = 0
+		if q.Length() < int(byteCount) {
+			update()
+		}
+		for i < byteCount {
+			pOutputSample[i] = q.Pop().(byte)
+			i += 1
+		}
+	}
+
+	deviceCallbacks := malgo.DeviceCallbacks{
+		Data: onSamples,
+	}
+	player, err = malgo.InitDevice(context.Context, deviceConfig, deviceCallbacks)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize speaker (player)")
+		os.Exit(1)
+	}
+
+	err = player.Start()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize speaker (player start)")
+	}
 
 	done = make(chan struct{})
 
@@ -52,8 +125,8 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 		for {
 			select {
 			default:
-				update()
 			case <-done:
+				player.Stop()
 				return
 			}
 		}
@@ -72,8 +145,9 @@ func Close() {
 			done <- struct{}{}
 			done = nil
 		}
-		player.Close()
-		context.Close()
+		player.Stop()
+		player.Uninit()
+		context.Uninit()
 		player = nil
 	}
 }
@@ -124,10 +198,8 @@ func update() {
 			valInt16 := int16(val * (1<<15 - 1))
 			low := byte(valInt16)
 			high := byte(valInt16 >> 8)
-			buf[i*4+c*2+0] = low
-			buf[i*4+c*2+1] = high
+			q.Append(low)
+			q.Append(high)
 		}
 	}
-
-	player.Write(buf)
 }
