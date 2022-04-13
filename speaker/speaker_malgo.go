@@ -11,7 +11,6 @@ import (
 	"github.com/faiface/beep"
 	"github.com/gen2brain/malgo"
 	"github.com/pkg/errors"
-	"github.com/sheerun/queue"
 )
 
 var (
@@ -21,7 +20,7 @@ var (
 	context *malgo.AllocatedContext
 	player  *malgo.Device
 	done    chan struct{}
-	q       *queue.Queue
+	buf     []byte
 )
 
 type SpeakerDevice struct {
@@ -90,18 +89,13 @@ func InitDeviceSelection(sampleRate beep.SampleRate, bufferSize int, cb chooseDe
 		return errors.Wrap(err, "failed to initialize speaker (configure)")
 	}
 
-	q = queue.New()
-
 	onSamples := func(pOutputSample, pInputSamples []byte, framecount uint32) {
 		byteCount := framecount * deviceConfig.Playback.Channels * uint32(malgo.SampleSizeInBytes(deviceConfig.Playback.Format))
-		var i uint32 = 0
-		if q.Length() < int(byteCount) {
+		if len(buf) < int(byteCount) {
 			update()
 		}
-		for i < byteCount {
-			pOutputSample[i] = q.Pop().(byte)
-			i += 1
-		}
+		copy(pOutputSample, buf[:byteCount])
+		buf = append([]byte{}, buf[byteCount:]...)
 	}
 
 	deviceCallbacks := malgo.DeviceCallbacks{
@@ -196,8 +190,7 @@ func update() {
 			valInt16 := int16(val * (1<<15 - 1))
 			low := byte(valInt16)
 			high := byte(valInt16 >> 8)
-			q.Append(low)
-			q.Append(high)
+			buf = append(buf, low, high)
 		}
 	}
 }
