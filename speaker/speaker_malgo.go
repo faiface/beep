@@ -6,7 +6,6 @@ package speaker
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/faiface/beep"
@@ -111,7 +110,6 @@ func InitDeviceSelection(sampleRate beep.SampleRate, bufferSize int, cb chooseDe
 	player, err = malgo.InitDevice(context.Context, deviceConfig, deviceCallbacks)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize speaker (player)")
-		os.Exit(1)
 	}
 
 	err = player.Start()
