@@ -10,6 +10,5 @@ require (
 	github.com/jfreymuth/oggvorbis v1.0.1
 	github.com/mewkiz/flac v1.0.7
 	github.com/pkg/errors v0.9.1
-	github.com/sheerun/queue v1.0.1
 	github.com/stretchr/testify v1.7.1 // indirect
 )
