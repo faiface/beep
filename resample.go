@@ -10,9 +10,9 @@ import "fmt"
 // Streamer which stream at a different sample rate will lead to a changed speed and pitch of the
 // playback.
 //
-//   sr := beep.SampleRate(48000)
-//   speaker.Init(sr, sr.N(time.Second/2))
-//   speaker.Play(beep.Resample(3, format.SampleRate, sr, s))
+//	sr := beep.SampleRate(48000)
+//	speaker.Init(sr, sr.N(time.Second/2))
+//	speaker.Play(beep.Resample(3, format.SampleRate, sr, s))
 //
 // In the example, the original sample rate of the source if format.SampleRate. We want to play it
 // at the speaker's native sample rate and thus we need to resample.
@@ -21,12 +21,12 @@ import "fmt"
 // worse performance. Values below 1 or above 64 are invalid and Resample will panic. Here's a table
 // for deciding which quality to pick.
 //
-//   quality | use case
-//   --------|---------
-//   1       | very high performance, on-the-fly resampling, low quality
-//   3-4     | good performance, on-the-fly resampling, good quality
-//   6       | higher CPU usage, usually not suitable for on-the-fly resampling, very good quality
-//   >6      | even higher CPU usage, for offline resampling, very good quality
+//	quality | use case
+//	--------|---------
+//	1       | very high performance, on-the-fly resampling, low quality
+//	3-4     | good performance, on-the-fly resampling, good quality
+//	6       | higher CPU usage, usually not suitable for on-the-fly resampling, very good quality
+//	>6      | even higher CPU usage, for offline resampling, very good quality
 //
 // Sane quality values are usually below 16. Higher values will consume too much CPU, giving
 // negligible quality improvements.
@@ -91,9 +91,16 @@ func (r *Resampler) Stream(samples [][2]float64) (n int, ok bool) {
 
 				var y float64
 				switch {
-				// the sample is in buf1
+				// the sample is in or before buf1
 				case k < r.off:
-					y = r.buf1[len(r.buf1)+k-r.off][c]
+					buf1Pos := len(r.buf1) + k - r.off
+					if buf1Pos < 0 {
+						// the sample needed is before buf1 (ratio has changed rapidly),
+						// repeat the oldest sample we have
+						buf1Pos = 0
+					}
+					y = r.buf1[buf1Pos][c]
+
 				// the sample is in buf2
 				case k < r.off+len(r.buf2):
 					y = r.buf2[k-r.off][c]
