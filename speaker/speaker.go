@@ -57,6 +57,7 @@ func Close() {
 	if player != nil {
 		player.Close()
 		player = nil
+		mixer.Clear()
 	}
 }
 
