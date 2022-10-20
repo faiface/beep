@@ -47,17 +47,15 @@ func Init(sampleRate beep.SampleRate, bufferSize int) error {
 	return nil
 }
 
-// Close closes the playback and the driver. In most cases, there is certainly no need to call Close
-// even when the program doesn't play anymore, because in properly set systems, the default mixer
-// handles multiple concurrent processes. It's only when the default device is not a virtual but hardware
-// device, that you'll probably want to manually manage the device from your application.
-//
-// TODO: investigate what happens now that oto.Context doesn't have a Close method.
+// Close closes audio playback. However, the underlying driver context keeps existing, because
+// closing it isn't supported (https://github.com/hajimehoshi/oto/issues/149). In most cases,
+// there is certainly no need to call Close even when the program doesn't play anymore, because
+// in properly set systems, the default mixer handles multiple concurrent processes.
 func Close() {
 	if player != nil {
 		player.Close()
 		player = nil
-		mixer.Clear()
+		Clear()
 	}
 }
 
@@ -82,6 +80,7 @@ func Play(s ...beep.Streamer) {
 }
 
 // Clear removes all currently playing Streamers from the speaker.
+// Previously buffered samples may still be played.
 func Clear() {
 	mu.Lock()
 	mixer.Clear()
@@ -100,7 +99,7 @@ func newReaderFromStreamer(s beep.Streamer) *sampleReader {
 	}
 }
 
-// Read pulls samples from the reader and fills buf with the encoded
+// Read pulls samples from the streamer and fills buf with the encoded
 // samples. Read expects the size of buf be divisible by the length
 // of a sample (= channel count * bit depth in bytes).
 func (s *sampleReader) Read(buf []byte) (n int, err error) {
@@ -112,9 +111,7 @@ func (s *sampleReader) Read(buf []byte) (n int, err error) {
 	if len(s.buf) < ns {
 		s.buf = make([][2]float64, ns)
 	}
-	mu.Lock()
-	ns, ok := s.s.Stream(s.buf[:ns])
-	mu.Unlock()
+	ns, ok := s.stream(s.buf[:ns])
 	if !ok {
 		if s.s.Err() != nil {
 			return 0, errors.Wrap(s.s.Err(), "streamer returned error when requesting samples")
@@ -143,4 +140,12 @@ func (s *sampleReader) Read(buf []byte) (n int, err error) {
 	}
 
 	return ns * bytesPerSample, nil
+}
+
+// stream pull samples from the streamer while preventing concurrency
+// problems by locking the global mixer.
+func (s *sampleReader) stream(samples [][2]float64) (n int, ok bool) {
+	mu.Lock()
+	defer mu.Unlock()
+	return s.s.Stream(samples)
 }
