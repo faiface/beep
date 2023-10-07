@@ -1,3 +1,7 @@
+# \*\*\*\*\*NOTICE\*\*\*\*\* 
+
+This repo is not under active development anymore and has been archived. Continued development has been migrated to [gopxl/Beep](https://github.com/gopxl/beep). A big thank you to [faiface](https://github.com/faiface) for creating this awesome library and for all the hard work put into it. We encourage old and new users to check out the new repo and contribute to it.
+
 # Beep [![GoDoc](https://godoc.org/github.com/faiface/beep?status.svg)](https://godoc.org/github.com/faiface/beep) [![Go Report Card](https://goreportcard.com/badge/github.com/faiface/beep)](https://goreportcard.com/report/github.com/faiface/beep) [![Discord Chat](https://img.shields.io/discord/699679031603494954)](https://discord.gg/q2DK4MP)
 
 A little package that brings sound to any Go application. Suitable for playback and audio-processing.
