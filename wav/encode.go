@@ -81,7 +81,7 @@ func Encode(w io.WriteSeeker, s beep.Streamer, format beep.Format) (err error) {
 	}
 
 	// finalize header
-	h.FileSize = int32(44 + written) // 44 is the size of the header
+	h.FileSize = int32(44 - 8 + written) // 44-8 is the size of the header without RIFF signature and the length of the RIFF chunk
 	h.DataSize = int32(written)
 	if _, err := w.Seek(0, io.SeekStart); err != nil {
 		return err
