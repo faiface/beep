@@ -50,3 +50,4 @@ Running an already built application should work with no extra dependencies.
 ## Projects using beep
 
 - [Mifasol music server](https://github.com/jypelle/mifasol)
+- [Listen podcast with goplay](https://github.com/LinuxSuRen/goplay)
