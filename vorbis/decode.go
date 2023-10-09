@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	govorbisNumChannels = 2
 	govorbisPrecision   = 2
 )
 
@@ -31,16 +30,18 @@ func Decode(rc io.ReadCloser) (s beep.StreamSeekCloser, format beep.Format, err 
 	}
 	format = beep.Format{
 		SampleRate:  beep.SampleRate(d.SampleRate()),
-		NumChannels: govorbisNumChannels,
+		NumChannels: d.Channels(),
 		Precision:   govorbisPrecision,
 	}
-	return &decoder{rc, d, format, nil}, format, nil
+	buffer := make([]float32, d.Channels())
+	return &decoder{rc, d, format, buffer, nil}, format, nil
 }
 
 type decoder struct {
 	closer io.Closer
 	d      *oggvorbis.Reader
 	f      beep.Format
+	buf    []float32
 	err    error
 }
 
@@ -48,11 +49,10 @@ func (d *decoder) Stream(samples [][2]float64) (n int, ok bool) {
 	if d.err != nil {
 		return 0, false
 	}
-	var tmp [2]float32
 	for i := range samples {
-		dn, err := d.d.Read(tmp[:])
-		if dn == 2 {
-			samples[i][0], samples[i][1] = float64(tmp[0]), float64(tmp[1])
+		dn, err := d.d.Read(d.buf[:])
+		if dn == d.f.NumChannels {
+			samples[i][0], samples[i][1] = float64(d.buf[0]), float64(d.buf[len(d.buf) - 1])
 			n++
 			ok = true
 		}
