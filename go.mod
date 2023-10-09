@@ -1,6 +1,6 @@
 module github.com/faiface/beep
 
-go 1.14
+go 1.18
 
 require (
 	github.com/gdamore/tcell v1.3.0
